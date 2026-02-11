@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GeoCalculator — Геодезия</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0f0f14;
+  --bg2:       #18181e;
+  --surface:   #1f1f28;
+  --surface2:  #25252e;
+  --surface3:  #2a2a35;
+  --border:    #2a2a35;
+  --border2:   #35354a;
+  --accent:    #6b7fd7;
+  --accent2:   #5a6dc6;
+  --accent3:   #8b9ce8;
+  --gold:      #d89042;
+  --green:     #3b9b6e;
+  --red:       #c7556e;
+  --text:      #dcdce4;
+  --text-dim:  #70707e;
+  --text-hi:   #f0f0f4;
+  --glow:      none;
+  --glow2:     none;
+  --radius:    10px;
+  --radius-sm: 6px;
+  --font:      'Nunito', sans-serif;
+  --mono:      'JetBrains Mono', monospace;
+  --nav-h:     64px;
+  --safe:      env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column;overscroll-behavior:none}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");background-size:200px;pointer-events:none;z-index:999;opacity:.3}
+
+/* HEADER */
+header{flex-shrink:0;height:60px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:relative;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-gem{width:36px;height:36px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-gem svg{width:20px;height:20px}
+.logo-name{font-size:20px;font-weight:800;color:var(--text-hi);letter-spacing:.5px;line-height:1.1}
+.logo-name span{color:var(--accent)}
+.logo-sub{font-size:9px;font-weight:400;color:var(--text-dim);letter-spacing:1.5px}
+.header-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.5px}
+
+/* APP SCROLL */
+.app{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + var(--safe) + 16px)}
+.app::-webkit-scrollbar{width:0}
+
+/* PAGE */
+.page{display:none;padding:16px 14px;animation:fadeUp .25s ease}
+.page.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HEAD */
+.page-head{margin-bottom:18px}
+.page-title{font-size:24px;font-weight:800;color:var(--text-hi);line-height:1.15}
+.page-title em{font-style:normal;color:var(--accent);}
+.page-desc{font-size:13px;color:var(--text-dim);margin-top:4px;line-height:1.5}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;position:relative;overflow:hidden}
+.card::before{content:’’;position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.6}
+.card-title{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.ct-icon{width:26px;height:26px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+
+/* FORM */
+.field{margin-bottom:12px}
+.field label{display:block;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--mono);font-size:14px;color:var(--text-hi);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none}
+.field textarea{resize:none;min-height:100px;line-height:1.7}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(107,127,215,.15)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘8’ viewBox=‘0 0 12 8’%3E%3Cpath d=‘M1 1l5 5 5-5’ stroke='%2370707e' stroke-width=‘1.5’ fill=‘none’ stroke-linecap=‘round’/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* BUTTONS */
+.btn{font-family:var(--font);font-size:15px;font-weight:700;border:none;border-radius:var(--radius-sm);padding:14px 20px;cursor:pointer;transition:all .18s;width:100%;letter-spacing:.3px}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent2);}
+.btn-primary:active{transform:scale(.97);}
+.btn-outline{background:var(--surface2);border:1px solid var(--border2);color:var(--text-dim)}
+.btn-outline:active{background:var(--surface3)}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+
+/* INFO */
+.info{background:rgba(107,127,215,.08);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12.5px;color:var(--text-dim);line-height:1.6;margin-bottom:14px}
+.info strong{color:var(--text)}
+
+/* RESULT */
+.result{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:14px}
+.result.hidden{display:none}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ri-label{font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px}
+.ri-val{font-family:var(--mono);font-size:17px;font-weight:500;color:var(--accent);line-height:1.1}
+.ri-val.p{color:var(--accent2)}.ri-val.g{color:var(--green)}.ri-val.o{color:var(--gold)}.ri-val.r{color:var(--red)}
+.result-sep{height:1px;background:var(--border);margin:14px 0}
+.result-formula{font-family:var(--mono);font-size:11px;color:var(--text-dim);line-height:1.9}
+.result-formula .hi{color:var(--accent)}.result-formula .hi2{color:var(--accent2)}.result-formula .hi3{color:var(--accent3)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:8px 14px;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:transparent;}
+.tab-pane{display:none}.tab-pane.active{display:block;animation:fadeUp .2s}
+
+/* CHECKS */
+.check-list{display:flex;flex-direction:column;gap:10px}
+.check-item{border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;line-height:1.5;display:flex;gap:10px;align-items:flex-start}
+.check-pass{background:rgba(59,155,110,.12);border:1px solid rgba(59,155,110,.25)}
+.check-fail{background:rgba(199,85,110,.12);border:1px solid rgba(199,85,110,.25)}
+.check-neutral{background:rgba(107,127,215,.08);border:1px solid rgba(107,127,215,.2)}
+.check-icon{font-size:16px;line-height:1.5;flex-shrink:0}
+.check-item strong{color:var(--text-hi);display:block;margin-bottom:2px}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.step{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 12px 12px 48px;font-size:13px;line-height:1.55;position:relative;counter-increment:s}
+.step::before{content:counter(s);position:absolute;left:12px;top:12px;width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.step-f{font-family:var(--mono);font-size:12px;color:var(--accent);margin-top:4px}
+
+/* HISTOGRAM */
+.hist-bars{display:flex;align-items:flex-end;gap:3px;height:90px}
+.hb{flex:1;min-width:10px;background:var(--accent);border-radius:3px 3px 0 0;opacity:.8;transition:opacity .2s}
+.hb:hover,.hb:active{opacity:1}
+.hist-labels{display:flex;gap:3px;margin-top:4px}
+.hl{flex:1;font-family:var(--mono);font-size:8px;color:var(--text-dim);text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius-sm)}
+table.dt{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+table.dt th{background:var(--surface3);color:var(--accent);padding:9px 12px;text-align:left;font-weight:500;border-bottom:1px solid var(--border2)}
+table.dt td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr:hover td{background:rgba(107,127,215,.06)}
+.td-hi{color:var(--accent)!important;font-weight:500}
+
+/* SLIDER */
+.slider-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.slider-val{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--accent);min-width:52px;text-align:right;flex-shrink:0}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--border2);border-radius:2px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);cursor:pointer}
+
+/* FORMULA */
+.formula-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--mono);font-size:12px;color:var(--text-dim);line-height:2;margin-bottom:14px}
+.fc-hi{color:var(--accent)}.fc-v{color:var(--accent2)}.fc-n{color:var(--gold)}
+
+/* LIVE CALC */
+.live-calc{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-top:12px}
+.live-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
+.live-row:last-child{border-bottom:none}
+.live-k{color:var(--text-dim);font-size:12px}
+.live-v{font-family:var(--mono);font-size:15px;color:var(--accent);font-weight:500}
+.live-v.p{color:var(--accent2)}.live-v.g{color:var(--green)}
+
+/* PROB */
+.prob-big{text-align:center;padding:8px 0 12px}
+.prob-num{font-family:var(--mono);font-size:46px;font-weight:500;color:var(--accent);line-height:1}
+.prob-sub{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:4px}
+
+/* GUIDE */
+.guide-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px}
+.guide-item-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px}
+
+/* LAPLACE */
+#laplace-table th,#laplace-table td{font-size:10px;padding:6px 8px}
+
+/* BOTTOM NAV */
+.bottom-nav{flex-shrink:0;position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav-h) + var(--safe));background:rgba(24,24,30,.96);border-top:1px solid var(--border);display:flex;align-items:stretch;padding-bottom:var(--safe);z-index:200;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;padding:8px 2px;border:none;background:none;position:relative}
+.nav-btn::before{content:’’;position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:0 0 2px 2px;transition:width .2s}
+.nav-btn.active::before{width:32px}
+.nav-icon{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;background:transparent}
+.nav-btn.ico-residuals .nav-icon{color:#3b9b6e}
+.nav-btn.ico-leveling .nav-icon{color:#e6b422}
+.nav-btn.ico-theodolite .nav-icon{color:#c7556e}
+.nav-btn.ico-tasks .nav-icon{color:#6b7fd7}
+.nav-btn.ico-guide .nav-icon{color:#fff}
+.nav-btn.active .nav-icon{background:rgba(255,255,255,.08)}
+.nav-label{font-size:9.5px;font-weight:600;color:#fff;letter-spacing:.3px;transition:opacity .15s}
+.nav-btn:not(.active) .nav-label{opacity:.85}
+
+/* LANDSCAPE */
+@media(orientation:landscape)and(max-height:500px){header{height:48px}.logo-gem{width:28px;height:28px}.logo-name{font-size:17px}.page{padding:10px 12px}.page-title{font-size:19px}.bottom-nav{height:calc(50px + var(--safe))}.nav-label{display:none}:root{--nav-h:50px}}
+
+/* DESKTOP */
+@media(min-width:600px){body{align-items:center}.bottom-nav{max-width:560px;left:50%;transform:translateX(-50%);border-radius:20px 20px 0 0;border:1px solid var(--border);border-bottom:none}.app{max-width:560px;width:100%}header{max-width:560px;width:100%;align-self:center}}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-gem">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L20 9L16 22H8L4 9Z" stroke="white" stroke-width="1.8" fill="rgba(255,255,255,.15)"/>
+        <path d="M4 9H20M8 9L12 2L16 9" stroke="white" stroke-width="1.2" opacity=".7"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-name">Geo<span>Calculator</span></div>
+      <div class="logo-sub">ГЕОДЕЗИЯ</div>
+    </div>
+  </div>
+  <div class="header-pill">v 3.0</div>
+</header>
+
+<div class="app">
+
+  <!-- ═══════ PAGE: НЕВЯЗКИ ═══════ -->
+
+  <div class="page active" id="page-residuals">
+    <div class="page-head">
+      <div class="page-title">Угловые <em>невязки</em></div>
+      <div class="page-desc">СКП, оценка точности, предельная погрешность</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">△</span>Данные</div>
+      <div class="info"><strong>Подсказка:</strong> Невязки f<sub>β</sub> в <strong>секундах</strong> (″). Ввод через пробел или запятую. Нужно не менее 2 значений.</div>
+      <div class="field">
+        <label>Значения невязок (сек)</label>
+        <textarea id="ar-input" placeholder="+1.02, +0.41, +0.02, -1.88..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="calcAR()">▶ Рассчитать</button>
+        <button class="btn btn-outline" onclick="arExample()">↓ Пример</button>
+      </div>
+    </div>
+    <div class="result hidden" id="ar-result">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('ar',0,this)">Итог</button>
+        <button class="tab-btn" onclick="switchTab('ar',1,this)">Свойства</button>
+        <button class="tab-btn" onclick="switchTab('ar',2,this)">График</button>
+        <button class="tab-btn" onclick="switchTab('ar',3,this)">Шаги</button>
+      </div>
+      <div class="tab-pane active" id="ar-t0"><div class="result-grid" id="ar-main"></div></div>
+      <div class="tab-pane" id="ar-t1"><div class="check-list" id="ar-checks"></div></div>
+      <div class="tab-pane" id="ar-t2"><div id="ar-hist"></div></div>
+      <div class="tab-pane" id="ar-t3"><div class="steps" id="ar-steps"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════ PAGE: НИВЕЛИРОВКА ═══════ -->
+
+  <div class="page" id="page-leveling">
+    <div class="page-head">
+      <div class="page-title">Нивелирный <em>ход</em></div>
+      <div class="page-desc">Невязка, допуск, уравнивание</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">⊟</span>Параметры</div>
+      <div class="info"><strong>Подсказка:</strong> H_A и H_B — отметки в <strong>метрах</strong>. Превышения h_i в м, длины секций d_i в <strong>км</strong>; каждое значение с новой строки. Порядок h_i и d_i должен совпадать (первая строка — первый участок).</div>
+      <div class="field-row">
+        <div class="field"><label>H_A (м)</label><input type="number" id="lev-ha" value="100.000" step="0.001"></div>
+        <div class="field"><label>H_B (м)</label><input type="number" id="lev-hb" value="98.325" step="0.001"></div>
+      </div>
+      <div class="field">
+        <label>Класс нивелирования</label>
+        <select id="lev-cls">
+          <option value="3">III класс — 5√L мм</option>
+          <option value="4" selected>IV класс — 10√L мм</option>
+          <option value="t">Технич. — 50√L мм</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Превышения h_i (м) — каждое с новой строки</label>
+        <textarea id="lev-h" placeholder="-0.312&#10;+0.548&#10;-0.271&#10;+0.390&#10;-0.030"></textarea>
+      </div>
+      <div class="field">
+        <label>Длины секций d_i (км) — каждая с новой строки</label>
+        <textarea id="lev-d" placeholder="1.2&#10;0.8&#10;1.5&#10;1.1&#10;0.9" style="min-height:72px"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="calcLev()">▶ Рассчитать</button>
+    </div>
+    <div class="result hidden" id="lev-result">
+      <div class="result-grid" id="lev-main"></div>
+      <div class="result-sep"></div>
+      <div class="tbl-wrap" id="lev-tbl"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ PAGE: ТЕОДОЛИТ ═══════ -->
+
+  <div class="page" id="page-theodolite">
+    <div class="page-head">
+      <div class="page-title">Теодолитный <em>ход</em></div>
+      <div class="page-desc">Угловая и линейная невязки, координаты</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ct-icon">∠</span>Опорные данные</div>
+      <div class="info"><strong>Подсказка:</strong> Углы β — <strong>правые</strong>, в <strong>градусах</strong>. Дирекционные углы α нач/кон и координаты — в градусах и метрах. Углы и стороны вводите по одному на строку, в порядке хода.</div>
+      <div class="field-row">
+        <div class="field"><label>α нач (°)</label><input type="number" id="th-a0" value="62.5" step="0.01"></div>
+        <div class="field"><label>α кон (°)</label><input type="number" id="th-an" value="124.75" step="0.01"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>X нач (м)</label><input type="number" id="th-x0" value="1000.00" step="0.01"></div>
+        <div class="field"><label>Y нач (м)</label><input type="number" id="th-y0" value="1000.00" step="0.01"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>X кон (м)</label><input type="number" id="th-xn" value="1248.55" step="0.01"></div>
+        <div class="field"><label>Y кон (м)</label><input type="number" id="th-yn" value="1352.80" step="0.01"></div>
+      </div>
+      <div class="field">
+        <label>Правые углы β (°) — каждый с новой строки</label>
+        <textarea id="th-ang" placeholder="178.32&#10;182.15&#10;175.48&#10;186.70&#10;177.90"></textarea>
+      </div>
+      <div class="field">
+        <label>Стороны d (м) — каждая с новой строки</label>
+        <textarea id="th-sides" placeholder="125.40&#10;98.70&#10;143.20&#10;87.50&#10;112.80" style="min-height:72px"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="calcTh()">▶ Рассчитать</button>
+    </div>
+    <div class="result hidden" id="th-result">
+      <div class="result-grid" id="th-main"></div>
+      <div class="result-sep"></div>
+      <div class="tbl-wrap" id="th-tbl"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ PAGE: ЗАДАЧИ ═══════ -->
+
+  <div class="page" id="page-tasks">
+    <div class="page-head">
+      <div class="page-title"><em>Геодезические</em> задачи</div>
+      <div class="page-desc">Прямая, обратная, вероятности, взвешенные</div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tk',0,this)">Прямая</button>
+      <button class="tab-btn" onclick="switchTab('tk',1,this)">Обратная</button>
+      <button class="tab-btn" onclick="switchTab('tk',2,this)">Вероятности</button>
+      <button class="tab-btn" onclick="switchTab('tk',3,this)">Взвешенные</button>
+    </div>
+
+<div class="tab-pane active" id="tk-t0">
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">→</span>Прямая задача</div>
+    <div class="info"><strong>Подсказка:</strong> X₁, Y₁ и d в <strong>метрах</strong>. α — дирекционный угол в <strong>градусах</strong> (0…360°).</div>
+    <div class="formula-card">X₂ = X₁ + <span class="fc-hi">d·cos(α)</span><br>Y₂ = Y₁ + <span class="fc-hi">d·sin(α)</span></div>
+    <div class="field-row">
+      <div class="field"><label>X₁ (м)</label><input type="number" id="fx1" value="1000" step="0.01" oninput="calcFwd()"></div>
+      <div class="field"><label>Y₁ (м)</label><input type="number" id="fy1" value="500" step="0.01" oninput="calcFwd()"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>α (°)</label><input type="number" id="fa" value="45" step="0.01" min="0" max="360" oninput="calcFwd()"></div>
+      <div class="field"><label>d (м)</label><input type="number" id="fd" value="100" step="0.01" min="0" oninput="calcFwd()"></div>
+    </div>
+    <div class="live-calc">
+      <div class="live-row"><span class="live-k">X₂</span><span class="live-v" id="fwd-x2">—</span></div>
+      <div class="live-row"><span class="live-k">Y₂</span><span class="live-v p" id="fwd-y2">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-pane" id="tk-t1">
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">←</span>Обратная задача</div>
+    <div class="info"><strong>Подсказка:</strong> Координаты обеих точек в <strong>метрах</strong>. Угол α выводится в градусах, минутах и секундах (°′″), расстояние d — в метрах.</div>
+    <div class="formula-card">r = atan(<span class="fc-v">ΔY</span>/<span class="fc-n">ΔX</span>)<br>d = √(ΔX²+ΔY²)</div>
+    <div class="field-row">
+      <div class="field"><label>X₁ (м)</label><input type="number" id="ix1" value="1000" step="0.01" oninput="calcInv()"></div>
+      <div class="field"><label>Y₁ (м)</label><input type="number" id="iy1" value="500" step="0.01" oninput="calcInv()"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>X₂ (м)</label><input type="number" id="ix2" value="1070.71" step="0.01" oninput="calcInv()"></div>
+      <div class="field"><label>Y₂ (м)</label><input type="number" id="iy2" value="570.71" step="0.01" oninput="calcInv()"></div>
+    </div>
+    <div class="live-calc">
+      <div class="live-row"><span class="live-k">Угол α</span><span class="live-v" id="inv-a">—</span></div>
+      <div class="live-row"><span class="live-k">Расстояние d</span><span class="live-v p" id="inv-d">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-pane" id="tk-t2">
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">∫</span>P(|Δ| &lt; k·σ)</div>
+    <div class="info"><strong>Подсказка:</strong> k — кратность СКП (например 2 или 3). Ниже: m (СКП) в <strong>секундах</strong> (″); Δ_пред = t·m (t=2 или t=3 по методичке).</div>
+    <div class="field">
+      <label>Коэффициент k</label>
+      <div class="slider-row">
+        <input type="range" id="pb-kr" min="0.1" max="4" step="0.05" value="2" oninput="document.getElementById('pb-k').value=this.value;calcProb()">
+        <div class="slider-val" id="pb-kv">2.00</div>
+      </div>
+      <input type="number" id="pb-k" value="2" step="0.05" min="0.1" max="5" style="margin-top:8px" oninput="document.getElementById('pb-kr').value=this.value;calcProb()">
+    </div>
+    <div class="prob-big">
+      <div class="prob-num" id="pb-pct">95.45%</div>
+      <div class="prob-sub">P(|Δ|&lt;k·σ) &nbsp;|&nbsp; Φ(k) = <span id="pb-phi">0.4773</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">⊥</span>Предельная погрешность</div>
+    <div class="info"><strong>Формула:</strong> Δ_пр = t·m. В геодезии чаще используют <strong>утроенную</strong> (t=3, ≈99.7%) или <strong>удвоенную</strong> (t=2, ≈95%) — зависит от методички/норматива. Выберите кратность t.</div>
+    <div class="field-row">
+      <div class="field"><label>m (СКП, сек)</label><input type="number" id="lm-s" value="1.0" step="0.01" oninput="calcLim()"></div>
+      <div class="field"><label>Кратность t</label>
+        <select id="lm-t" onchange="calcLim()">
+          <option value="2">t=2 — удвоенная (≈95%)</option>
+          <option value="2.5">t=2.5 (≈99%)</option>
+          <option value="3" selected>t=3 — утроенная (≈99.7%)</option>
+        </select>
+      </div>
+    </div>
+    <div class="live-calc">
+      <div class="live-row"><span class="live-k">Δ_пред = t·m</span><span class="live-v g" id="lm-res">±3.000″</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">≡</span>Таблица Лапласа Φ(x)</div>
+    <div class="tbl-wrap"><table class="dt" id="laplace-table"></table></div>
+  </div>
+</div>
+
+<div class="tab-pane" id="tk-t3">
+  <div class="card">
+    <div class="card-title"><span class="ct-icon">⚖</span>Взвешенные измерения</div>
+    <div class="info"><strong>Подсказка:</strong> Формат: <strong>значение ; вес</strong> — одна строка. Десятичный разделитель — точка. Пример: 100.325 ; 2</div>
+    <div class="field">
+      <label>Измерения и веса</label>
+      <textarea id="wt-in" placeholder="100.325; 1&#10;100.318; 2&#10;100.330; 3&#10;100.322; 4"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="calcWt()">▶ Рассчитать</button>
+  </div>
+  <div class="result hidden" id="wt-result">
+    <div class="result-grid" id="wt-main"></div>
+    <div class="result-sep"></div>
+    <div class="tbl-wrap" id="wt-tbl"></div>
+    <div class="result-sep"></div>
+    <div class="result-formula" id="wt-f"></div>
+  </div>
+</div>
+
+  </div>
+
+  <!-- ═══════ PAGE: СПРАВОЧНИК ═══════ -->
+
+  <div class="page" id="page-guide">
+    <div class="page-head">
+      <div class="page-title"><em>Справочник</em> формул</div>
+      <div class="page-desc">Все ключевые формулы геодезии</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-title">📐 СКП при истинных ошибках</div>
+      <div class="formula-card" style="margin-bottom:0">m = √(<span class="fc-v">[Δ²]</span>/<span class="fc-n">n</span>)<br>m<sub>m</sub> = m/√(<span class="fc-n">2n</span>)</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-title">📐 СКП при отклонениях от среднего</div>
+      <div class="formula-card" style="margin-bottom:0">m = √(<span class="fc-v">[v²]</span>/(<span class="fc-n">n</span>−1))</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-title">📐 Предельная погрешность</div>
+      <div class="formula-card" style="margin-bottom:0">Δ<sub>пред</sub> = <span class="fc-hi">t</span>·m<br>t=2: P=95.45% | t=3: P=99.73%</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-title">📐 Нивелирный ход</div>
+      <div class="formula-card" style="margin-bottom:0">f<sub>h</sub> = [h]−(H<sub>B</sub>−H<sub>A</sub>)<br>f<sub>доп</sub> = <span class="fc-hi">10</span>·√<span class="fc-v">L</span> мм (IV) | <span class="fc-hi">5</span>·√<span class="fc-v">L</span> мм (III)<br>δh<sub>i</sub> = −f<sub>h</sub>·d<sub>i</sub>/[d]</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-title">📐 Теодолитный ход</div>
+      <div class="formula-card" style="margin-bottom:0">f<sub>β</sub>=[β]−(α₀−αₙ+n·180°)<br>f<sub>доп</sub>=1′·√n &nbsp;|&nbsp; f<sub>s</sub>=√(f<sub>x</sub>²+f<sub>y</sub>²)</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-title">📐 Взвешенные измерения</div>
+      <div class="formula-card" style="margin-bottom:0">x̄=[p·l]/[p]<br>μ=√([p·v²]/([p]−1))<br>m<sub>x̄</sub>=μ/√[p]</div>
+    </div>
+    <div class="guide-item">
+      <div class="guide-item-title">📐 Прямая / Обратная задачи</div>
+      <div class="formula-card" style="margin-bottom:0">ΔX=d·cos(α), ΔY=d·sin(α)<br>α=atan2(ΔY,ΔX) → по четвертям</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+
+<nav class="bottom-nav">
+  <button class="nav-btn ico-residuals active" onclick="goPage('residuals',this)">
+    <div class="nav-icon">△</div><div class="nav-label">Невязки</div>
+  </button>
+  <button class="nav-btn ico-leveling" onclick="goPage('leveling',this)">
+    <div class="nav-icon">⊟</div><div class="nav-label">Нивелир</div>
+  </button>
+  <button class="nav-btn ico-theodolite" onclick="goPage('theodolite',this)">
+    <div class="nav-icon">∠</div><div class="nav-label">Теодолит</div>
+  </button>
+  <button class="nav-btn ico-tasks" onclick="goPage('tasks',this)">
+    <div class="nav-icon">⊕</div><div class="nav-label">Задачи</div>
+  </button>
+  <button class="nav-btn ico-guide" onclick="goPage('guide',this)">
+    <div class="nav-icon">≡</div><div class="nav-label">Формулы</div>
+  </button>
+</nav>
+
+<script>
+// ── NAVIGATION ───────────────────────────────────────────
+function goPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  document.querySelector('.app').scrollTop=0;
+}
+
+function switchTab(g,idx,btn){
+  const allBtns=btn.parentElement.querySelectorAll('.tab-btn');
+  const allPanes=document.querySelectorAll('[id^="'+g+'-t"]');
+  allBtns.forEach(b=>b.classList.remove('active'));
+  allPanes.forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(g+'-t'+idx).classList.add('active');
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+const pn = t=>t.replace(/[,;\n\r\t]+/g,' ').trim().split(/\s+/).map(s=>parseFloat(s.replace(',','.'))).filter(v=>!isNaN(v));
+const fn = (v,d=4)=>typeof v==='number'?v.toFixed(d):String(v);
+const fs = (v,d=4)=>typeof v==='number'?(v>=0?'+':'')+v.toFixed(d):String(v);
+const ri = (l,v,c='')=>`<div class="result-item"><div class="ri-label">${l}</div><div class="ri-val ${c}">${v}</div></div>`;
+
+// ── УГЛОВЫЕ НЕВЯЗКИ ───────────────────────────────────────
+function arExample(){
+  document.getElementById('ar-input').value=
+    '+1.02 +0.41 +0.02 -1.88 -1.44 -0.25 +0.12 +0.22 -1.05 +0.56\n'+
+    '-1.72 +1.29 -1.81 -0.08 -0.50 -1.89 +0.72 +0.24 -0.13 +0.59\n'+
+    '-0.90 +1.22 -1.84 -0.44 +0.18 -0.08 -1.11 +2.51 -1.16 +1.65\n'+
+    '+2.80 -0.81 +1.04 +0.42 +0.68 +0.55 +0.22 +1.67 +0.11 +2.08\n'+
+    '-0.44 -0.28 -0.75 -0.80 -0.95 -0.58 +1.60 +1.85 +2.22 -2.59';
+  calcAR();
+}
+
+function calcAR(){
+  const v=pn(document.getElementById('ar-input').value);
+  if(v.length<2){alert('Введите хотя бы 2 значения');return;}
+  const n=v.length, sum=v.reduce((a,b)=>a+b,0), mean=sum/n;
+  const sq2=v.reduce((a,x)=>a+x*x,0), m=Math.sqrt(sq2/n), mm=m/Math.sqrt(2*n), dp=3*m;
+  const posN=v.filter(x=>x>0).length, negN=v.filter(x=>x<0).length;
+  const maxA=Math.max(...v.map(Math.abs));
+  const out=v.filter(x=>Math.abs(x)>dp).length;
+
+  document.getElementById('ar-main').innerHTML=
+    ri('n измерений',n)+ri('СКП m (″)','±'+fn(m,3))+
+    ri('Точность m_m','±'+fn(mm,4),'p')+ri('m ± m_m',fn(m,3)+'±'+fn(mm,3),'g')+
+    ri('Δ_пред = 3m','±'+fn(dp,3),'o')+ri('Σf (сек)',fs(sum,3))+
+    ri('Среднее',fs(mean,4),'p')+ri('Макс |f|',fn(maxA,2)+'″');
+
+  const c1=Math.abs(mean)<=2*m/Math.sqrt(n), c2=out===0, c3=Math.abs(posN-negN)<=1.5*Math.sqrt(n);
+  document.getElementById('ar-checks').innerHTML=`
+    <div class="check-item ${c1?'check-pass':'check-fail'}">
+      <span class="check-icon">${c1?'✅':'❌'}</span>
+      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${fn(mean,4)}″ — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+    </div>
+    <div class="check-item ${c2?'check-pass':'check-fail'}">
+      <span class="check-icon">${c2?'✅':'❌'}</span>
+      <div><strong>Ограниченность</strong>Δ_пред=±${fn(dp,3)}″; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+    </div>
+    <div class="check-item ${c3?'check-pass':'check-fail'}">
+      <span class="check-icon">${c3?'✅':'❌'}</span>
+      <div><strong>Взаимное уничтожение</strong>+:${posN} / −:${negN} — ${c3?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+    </div>
+    <div class="check-item check-neutral">
+      <span class="check-icon">ℹ️</span>
+      <div><strong>Вывод</strong>${(c1&&c2&&c3)?'Погрешности случайные.':'Обнаружены отклонения. Требуется анализ.'}</div>
+    </div>`;
+
+  const lo=Math.min(...v),hi=Math.max(...v),bc=Math.max(5,Math.ceil(Math.sqrt(n))),bw=(hi-lo)/bc;
+  const bins=new Array(bc).fill(0);
+  v.forEach(x=>bins[Math.min(Math.floor((x-lo)/bw),bc-1)]++);
+  const maxB=Math.max(...bins);
+  document.getElementById('ar-hist').innerHTML=`
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:8px">${bc} интервалов, n=${n}</div>
+    <div class="hist-bars">${bins.map(b=>`<div class="hb" style="height:${Math.max(4,Math.round(b/maxB*80))}px"></div>`).join('')}</div>
+    <div class="hist-labels">${bins.map((_,i)=>`<div class="hl">${fn(lo+i*bw,1)}</div>`).join('')}</div>
+    <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
+      <span style="color:var(--accent)">±m</span>=±${fn(m,3)}″ &nbsp;<span style="color:var(--accent2)">3m</span>=±${fn(dp,3)}″</div>`;
+
+  document.getElementById('ar-steps').innerHTML=`
+    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${fn(lo,2)}″…${fn(hi,2)}″</div></div>
+    <div class="step">Сумма квадратов [Δ²]=Σf_β²<div class="step-f">[Δ²]=${fn(sq2,4)} кв.сек</div></div>
+    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fn(sq2,4)}/${n})=±${fn(m,3)}″</div></div>
+    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=${fn(m,3)}/√${2*n}=±${fn(mm,4)}″</div></div>
+    <div class="step">Результат<div class="step-f">m=±${fn(m,3)}±${fn(mm,3)} (сек)</div></div>
+    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×${fn(m,3)}=±${fn(dp,3)}″</div></div>
+    <div class="step">Проверка свойств<div class="step-f">Симметрия ${c1?'✓':'✗'} | Ограниченность ${c2?'✓':'✗'} | Уничтожение ${c3?'✓':'✗'}</div></div>`;
+
+  document.getElementById('ar-result').classList.remove('hidden');
+}
+
+// ── НИВЕЛИРНЫЙ ХОД ───────────────────────────────────────
+function calcLev(){
+  const HA=+document.getElementById('lev-ha').value, HB=+document.getElementById('lev-hb').value;
+  const hv=pn(document.getElementById('lev-h').value);
+  let dv=pn(document.getElementById('lev-d').value);
+  const cls=document.getElementById('lev-cls').value;
+  if(!hv.length){alert('Введите превышения');return;}
+  if(dv.length!==hv.length)dv=new Array(hv.length).fill(1);
+  const sumH=hv.reduce((a,b)=>a+b,0), sumD=dv.reduce((a,b)=>a+b,0);
+  const fh=sumH-(HB-HA), k=cls==='3'?5:cls==='4'?10:50, fdop=k*Math.sqrt(sumD);
+  const ok=Math.abs(fh*1000)<=fdop;
+  const corr=dv.map(d=>-fh*d/sumD), adjH=hv.map((h,i)=>h+corr[i]);
+
+  document.getElementById('lev-main').innerHTML=
+    ri('Σh',fn(sumH,4)+' м')+ri('H_B−H_A',fn(HB-HA,4)+' м')+
+    ri('Невязка f_h',fn(fh*1000,1)+' мм',Math.abs(fh*1000)>fdop?'r':'')+
+    ri('Допуск ±'+k+'√L','±'+fn(fdop,1)+' мм','o')+
+    ri('Оценка',ok?'✓ НОРМА':'✗ ПРЕВЫШЕН',ok?'g':'r')+
+    ri('Σ длин',fn(sumD,3)+' км');
+
+  let rows='',H=HA;
+  rows+=`<tr><td class="td-hi">A</td><td>—</td><td>—</td><td>—</td><td class="td-hi">${fn(HA,4)}</td></tr>`;
+  adjH.forEach((h,i)=>{H+=h;rows+=`<tr><td>${i+1}</td><td>${fs(hv[i],4)}</td><td>${fn(corr[i]*1000,1)} мм</td><td>${fs(h,4)}</td><td class="td-hi">${fn(H,4)}</td></tr>`;});
+  document.getElementById('lev-tbl').innerHTML=`<table class="dt"><thead><tr><th>Тч</th><th>h_i</th><th>Попр.</th><th>h_исп</th><th>H (м)</th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('lev-result').classList.remove('hidden');
+}
+
+// ── ТЕОДОЛИТНЫЙ ХОД ──────────────────────────────────────
+function calcTh(){
+  const a0=+document.getElementById('th-a0').value, an=+document.getElementById('th-an').value;
+  const x0=+document.getElementById('th-x0').value, y0=+document.getElementById('th-y0').value;
+  const xn=+document.getElementById('th-xn').value, yn=+document.getElementById('th-yn').value;
+  const ang=pn(document.getElementById('th-ang').value), sid=pn(document.getElementById('th-sides').value);
+  if(!ang.length||!sid.length){alert('Введите углы и стороны');return;}
+  const n=ang.length, sumB=ang.reduce((a,b)=>a+b,0), thSum=a0-an+n*180, fbDeg=sumB-thSum, fdop=Math.sqrt(n), fb=fbDeg*60;
+  const dBDeg=-fbDeg/n, adjA=ang.map(a=>a+dBDeg), alphas=[a0];
+  adjA.forEach(b=>{let a=alphas[alphas.length-1]-b+180;while(a<0)a+=360;while(a>=360)a-=360;alphas.push(a);});
+  const R=Math.PI/180, dX=sid.map((d,i)=>d*Math.cos(alphas[i]*R)), dY=sid.map((d,i)=>d*Math.sin(alphas[i]*R));
+  const sumD=sid.reduce((a,b)=>a+b,0), fx=dX.reduce((a,b)=>a+b,0)-(xn-x0), fy=dY.reduce((a,b)=>a+b,0)-(yn-y0);
+  const fss=Math.sqrt(fx*fx+fy*fy), T=fss/sumD;
+  const cx=sid.map(d=>-fx*d/sumD), cy=sid.map(d=>-fy*d/sumD);
+
+  document.getElementById('th-main').innerHTML=
+    ri('f_β (′)',fs(fb,2),Math.abs(fb)>fdop?'r':'')+ri('Допуск ±1′√n','±'+fn(fdop,2)+'′')+
+    ri('Угл. невязка',Math.abs(fb)<=fdop?'✓ НОРМА':'✗ ПРЕВЫШЕН',Math.abs(fb)<=fdop?'g':'r')+
+    ri('f_s (м)',fn(fss,4),'o')+ri('1/T',Math.round(1/T),'g')+ri('Σ длин',fn(sumD,3)+' м');
+
+  let rows='',cx2=x0,cy2=y0;
+  rows+=`<tr><td class="td-hi">Н</td><td>—</td><td>—</td><td>—</td><td class="td-hi">${fn(x0,3)}</td><td class="td-hi">${fn(y0,3)}</td></tr>`;
+  sid.forEach((_,i)=>{cx2+=dX[i]+cx[i];cy2+=dY[i]+cy[i];rows+=`<tr><td>${i+1}</td><td>${fn(alphas[i],2)}°</td><td>${fn(sid[i],2)}</td><td>${fs(dX[i]+cx[i],3)}</td><td class="td-hi">${fn(cx2,3)}</td><td class="td-hi">${fn(cy2,3)}</td></tr>`;});
+  document.getElementById('th-tbl').innerHTML=`<table class="dt"><thead><tr><th>Тч</th><th>α(°)</th><th>d(м)</th><th>ΔX</th><th>X</th><th>Y</th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('th-result').classList.remove('hidden');
+}
+
+// ── ПРЯМАЯ / ОБРАТНАЯ ─────────────────────────────────────
+function calcFwd(){
+  const x1=+document.getElementById('fx1').value||0, y1=+document.getElementById('fy1').value||0;
+  const a=+document.getElementById('fa').value||0, d=+document.getElementById('fd').value||0;
+  const r=a*Math.PI/180;
+  document.getElementById('fwd-x2').textContent=fn(x1+d*Math.cos(r),4)+' м';
+  document.getElementById('fwd-y2').textContent=fn(y1+d*Math.sin(r),4)+' м';
+}
+function calcInv(){
+  const x1=+document.getElementById('ix1').value||0, y1=+document.getElementById('iy1').value||0;
+  const x2=+document.getElementById('ix2').value||0, y2=+document.getElementById('iy2').value||0;
+  const dx=x2-x1, dy=y2-y1, dist=Math.sqrt(dx*dx+dy*dy);
+  let al=Math.atan2(dy,dx)*180/Math.PI; if(al<0)al+=360;
+  const deg=Math.floor(al), mf=(al-deg)*60, min=Math.floor(mf), sec=Math.round((mf-min)*60);
+  document.getElementById('inv-a').textContent=`${deg}°${String(min).padStart(2,'0')}′${String(sec).padStart(2,'0')}″`;
+  document.getElementById('inv-d').textContent=fn(dist,4)+' м';
+}
+
+// ── ВЕРОЯТНОСТИ ───────────────────────────────────────────
+function phi(x){const t=x/Math.sqrt(2);let s=0,tm=t,sg=1;for(let k=0;k<80;k++){s+=sg*tm/(2*k+1);tm*=t*t/(k+1);sg*=-1;}return s/Math.sqrt(Math.PI/2)*0.5;}
+function calcProb(){
+  const k=parseFloat(document.getElementById('pb-k').value)||2;
+  document.getElementById('pb-kv').textContent=fn(k,2);
+  const p=2*phi(k);
+  document.getElementById('pb-pct').textContent=fn(p*100,2)+'%';
+  document.getElementById('pb-phi').textContent=fn(p/2,4);
+}
+function calcLim(){
+  const s=parseFloat(document.getElementById('lm-s').value)||1, t=parseFloat(document.getElementById('lm-t').value)||3;
+  document.getElementById('lm-res').textContent='±'+fn(t*s,3)+'″';
+}
+
+// ── ВЗВЕШЕННЫЕ ────────────────────────────────────────────
+function calcWt(){
+  const lines=document.getElementById('wt-in').value.trim().split('\n');
+  const data=lines.map(l=>{const p=l.split(/[;,\s]+/);return{l:parseFloat(p[0]),p:parseFloat(p[1])||1};}).filter(d=>!isNaN(d.l));
+  if(data.length<2){alert('Введите хотя бы 2 строки');return;}
+  const sp=data.reduce((a,d)=>a+d.p,0), spl=data.reduce((a,d)=>a+d.p*d.l,0), mean=spl/sp;
+  const v=data.map(d=>d.l-mean), spv2=data.reduce((a,d,i)=>a+d.p*v[i]*v[i],0);
+  const mu=Math.sqrt(spv2/(sp-1)), mx=mu/Math.sqrt(sp);
+
+  document.getElementById('wt-main').innerHTML=
+    ri('Взвеш. средняя',fn(mean,5))+ri('[p]',fn(sp,2))+
+    ri('μ (ед. веса)','±'+fn(mu,5),'p')+ri('m_x̄','±'+fn(mx,5),'g')+
+    ri('Δ_пред','±'+fn(3*mx,5),'o');
+
+  let rows='';
+  data.forEach((d,i)=>rows+=`<tr><td>${fn(d.l,5)}</td><td>${fn(d.p,2)}</td><td>${fs(v[i],5)}</td><td>${fn(d.p*v[i]*v[i],6)}</td></tr>`);
+  rows+=`<tr><td>Σ</td><td class="td-hi">${fn(sp,2)}</td><td>—</td><td class="td-hi">${fn(spv2,6)}</td></tr>`;
+  document.getElementById('wt-tbl').innerHTML=`<table class="dt"><thead><tr><th>l_i</th><th>p_i</th><th>v_i</th><th>p·v²</th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('wt-f').innerHTML=`<span class="hi">x̄</span>=${fn(spl,4)}/${fn(sp,2)}=${fn(mean,5)}<br><span class="hi2">μ</span>=√(${fn(spv2,4)}/${fn(sp-1,2)})=±${fn(mu,5)}<br><span class="hi">m_x̄</span>=±${fn(mx,5)}`;
+  document.getElementById('wt-result').classList.remove('hidden');
+}
+
+// ── ТАБЛИЦА ЛАПЛАСА ───────────────────────────────────────
+function buildLaplace(){
+  let h='<thead><tr><th>x</th>';
+  for(let d=0;d<=9;d++)h+=`<th>.0${d}</th>`;
+  h+='</tr></thead><tbody>';
+  for(let xi=0;xi<=30;xi++){
+    const x0=xi/10; h+=`<tr><td class="td-hi">${fn(x0,1)}</td>`;
+    for(let d=0;d<=9;d++)h+=`<td>${fn(phi(x0+d/100),4)}</td>`;
+    h+='</tr>';
+  }
+  document.getElementById('laplace-table').innerHTML=h+'</tbody>';
+}
+
+// ── INIT ──────────────────────────────────────────────────
+window.onload=()=>{buildLaplace();calcProb();calcLim();calcFwd();calcInv();};
+</script>
+
+</body>
+</html>
