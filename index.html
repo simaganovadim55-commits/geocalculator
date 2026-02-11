@@ -240,10 +240,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <button class="tab-btn" id="ar-tab-m" onclick="switchArMode('m',this)">Метры (м)</button>
       </div>
       <div class="tab-pane active" id="ar-pane-dms">
-        <div class="info"><strong>Углы:</strong> невязки в <strong>секундах</strong> (″) или в формате <strong>градусы минуты секунды</strong> (по три числа). Разделители между значениями — пробел или запятая; дробная часть — точка (1.09, 2.3). Минуты и секунды 0–59. Не менее 2 значений.</div>
+        <div class="info"><strong>Углы:</strong> невязки в <strong>секундах</strong> (″). Каждое число — одно измерение: <strong>сколько чисел, столько и измерений</strong>. Разделители — пробел или запятая; дробная часть — точка. Не менее 2 значений.</div>
         <div class="field">
-          <label>Невязки (° ′ ″ или сек)</label>
-          <textarea id="ar-input-dms" placeholder="1.02 -1.88 0.41&#10;0 0 1.02  0 0 -1.88"></textarea>
+          <label>Невязки (сек)</label>
+          <textarea id="ar-input-dms" placeholder="1.02 -1.88 0.41 0.12 0.22"></textarea>
         </div>
       </div>
       <div class="tab-pane" id="ar-pane-m">
@@ -606,33 +606,9 @@ function formatDMS(totalSec){
   if(d >= 360) d = d % 360;
   return d + '°' + String(m).padStart(2,'0') + '′' + String(s).padStart(2,'0') + '″';
 }
-// Парсинг DMS: на строке либо только секунды (каждое число отдельно), либо цепочка троек °′″ (каждые 3 числа = один угол). Если в тройке минуты/секунды ≥60 — приводим к 0–59.
+// Парсинг угловых невязок: сколько чисел — столько измерений (каждое число = значение в секундах)
 function pnDms(t){
-  const lines = t.trim().split(/[\r\n]+/);
-  const out = [];
-  for(const line of lines){
-    const parts = line.replace(/,/g,' ').trim().split(/\s+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
-    if(parts.length >= 3 && parts.length % 3 === 0){
-      for(let i = 0; i < parts.length; i += 3){
-        const d = parts[i], m = parts[i+1], sec = parts[i+2];
-        let totalSec = d * 3600 + m * 60 + sec;
-        if(m >= 60 || m < 0 || sec >= 60 || sec < 0){ const n = secToDMS(totalSec); totalSec = n.d*3600 + n.m*60 + n.s; }
-        out.push(totalSec);
-      }
-    } else if(parts.length >= 3){
-      const triplets = Math.floor(parts.length / 3);
-      for(let i = 0; i < triplets; i++){
-        const d = parts[i*3], m = parts[i*3+1], sec = parts[i*3+2];
-        let totalSec = d * 3600 + m * 60 + sec;
-        if(m >= 60 || m < 0 || sec >= 60 || sec < 0){ const n = secToDMS(totalSec); totalSec = n.d*3600 + n.m*60 + n.s; }
-        out.push(totalSec);
-      }
-      for(let i = triplets * 3; i < parts.length; i++) out.push(parts[i]);
-    } else {
-      parts.forEach(x=>out.push(x));
-    }
-  }
-  return out;
+  return pn(t);
 }
 function arExample(){
   if(arMode==='dms'){
