@@ -77,6 +77,12 @@ header{flex-shrink:0;height:60px;background:var(--bg2);border-bottom:1px solid v
 .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(107,127,215,.15)}
 .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘8’ viewBox=‘0 0 12 8’%3E%3Cpath d=‘M1 1l5 5 5-5’ stroke='%2370707e' stroke-width=‘1.5’ fill=‘none’ stroke-linecap=‘round’/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Полосы прокрутки полей — в тон интерфейсу */
+.field textarea::-webkit-scrollbar{width:8px}
+.field textarea::-webkit-scrollbar-track{background:var(--surface);border-radius:4px}
+.field textarea::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.field textarea::-webkit-scrollbar-thumb:hover{background:var(--text-dim)}
+.field textarea{scrollbar-color:var(--border2) var(--surface);scrollbar-width:thin}
 
 /* BUTTONS */
 .btn{font-family:var(--font);font-size:15px;font-weight:700;border:none;border-radius:var(--radius-sm);padding:14px 20px;cursor:pointer;transition:all .18s;width:100%;letter-spacing:.3px}
