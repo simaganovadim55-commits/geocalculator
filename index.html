@@ -240,14 +240,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <button class="tab-btn" id="ar-tab-m" onclick="switchArMode('m',this)">Метры (м)</button>
       </div>
       <div class="tab-pane active" id="ar-pane-dms">
-        <div class="info"><strong>Углы:</strong> невязки в <strong>секундах</strong> (″) или в формате <strong>градусы минуты секунды</strong> (три числа через пробел). Одно число в строке = секунды; три числа = одна невязка в °′″. Целые и дробные. Не менее 2 значений.</div>
+        <div class="info"><strong>Углы:</strong> невязки в <strong>секундах</strong> (″) или в формате <strong>градусы минуты секунды</strong> (по три числа). Разделители между значениями — пробел или запятая; дробная часть — точка (1.09, 2.3). Минуты и секунды 0–59. Не менее 2 значений.</div>
         <div class="field">
           <label>Невязки (° ′ ″ или сек)</label>
           <textarea id="ar-input-dms" placeholder="1.02 -1.88 0.41&#10;0 0 1.02  0 0 -1.88"></textarea>
         </div>
       </div>
       <div class="tab-pane" id="ar-pane-m">
-        <div class="info"><strong>Метры:</strong> линейные невязки в <strong>метрах</strong> (м). Целые и дробные. Ввод через пробел или запятую. Не менее 2 значений.</div>
+        <div class="info"><strong>Метры:</strong> линейные невязки в <strong>метрах</strong> (м). Разделители — пробел или запятая; дробная часть — точка (1.09, 2.3). Не менее 2 значений.</div>
         <div class="field">
           <label>Невязки (м)</label>
           <textarea id="ar-input-m" placeholder="0.002 -0.001 0.003 0.001 -0.002"></textarea>
@@ -281,7 +281,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="card">
       <div class="card-title"><span class="ct-icon">⊟</span>Параметры</div>
-      <div class="info"><strong>Подсказка:</strong> H_A и H_B — отметки в <strong>метрах</strong>. Превышения h_i в м, длины секций d_i в <strong>км</strong>; принимаются <strong>целые и дробные</strong>. Каждое значение с новой строки. Порядок h_i и d_i должен совпадать.</div>
+      <div class="info"><strong>Подсказка:</strong> H_A и H_B — в метрах. Превышения h_i и длины d_i — с новой строки; разделители между числами в строке: пробел или запятая; дробная часть — точка.</div>
       <div class="field-row">
         <div class="field"><label>H_A (м)</label><input type="number" id="lev-ha" value="100.000" step="0.001"></div>
         <div class="field"><label>H_B (м)</label><input type="number" id="lev-hb" value="98.325" step="0.001"></div>
@@ -320,7 +320,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="card">
       <div class="card-title"><span class="ct-icon">∠</span>Опорные данные</div>
-      <div class="info"><strong>Подсказка:</strong> Углы β — <strong>правые</strong>, в <strong>градусах</strong>. Дирекционные углы α нач/кон и координаты — в градусах и метрах. Принимаются <strong>целые и дробные</strong>. Углы и стороны — по одному на строку, в порядке хода.</div>
+      <div class="info"><strong>Подсказка:</strong> Углы β — правые, в градусах. Разделители — пробел или запятая; дробная часть — точка. Углы и стороны — по одному на строку, в порядке хода.</div>
       <div class="field-row">
         <div class="field"><label>α нач (°)</label><input type="number" id="th-a0" value="62.5" step="0.01"></div>
         <div class="field"><label>α кон (°)</label><input type="number" id="th-an" value="124.75" step="0.01"></div>
@@ -447,7 +447,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div class="tab-pane" id="tk-t3">
   <div class="card">
     <div class="card-title"><span class="ct-icon">⚖</span>Взвешенные измерения</div>
-    <div class="info"><strong>Подсказка:</strong> Формат: <strong>значение ; вес</strong> — одна строка. Принимаются <strong>целые и дробные</strong> (разделитель — точка или запятая). Пример: 100.325 ; 2 или 100 ; 1</div>
+    <div class="info"><strong>Подсказка:</strong> Формат: <strong>значение ; вес</strong> (или запятая/пробел между ними). Дробная часть — точка (100.325; 2 или 100, 1).</div>
     <div class="field">
       <label>Измерения и веса</label>
       <textarea id="wt-in" placeholder="100.325; 1&#10;100; 2&#10;100.33; 3&#10;100.32; 4"></textarea>
@@ -544,9 +544,9 @@ function switchTab(g,idx,btn){
 }
 
 // ── HELPERS ───────────────────────────────────────────────
-// Парсинг: целые и дробные (разделитель — точка или запятая)
+// Парсинг: разделители между значениями — пробел или запятая; дробная часть — точка (1.09, 2.3)
 const pn = t=>t.replace(/[,;\n\r\t]+/g,' ').trim().split(/\s+/).map(s=>{
-  const x = s.replace(',','.').trim();
+  const x = s.trim();
   if(x==='') return NaN;
   const num = parseFloat(x);
   return isNaN(num) ? NaN : num;
@@ -572,14 +572,65 @@ function switchArMode(mode, btn){
   btn.classList.add('active');
   document.getElementById(mode==='dms'?'ar-pane-dms':'ar-pane-m').classList.add('active');
 }
-// Парсинг DMS: строка с тремя числами = одна невязка в °′″; иначе каждое число = секунды
+// Секунды → нормализованные °′″ (минуты и секунды строго 0–59; при |totalSec|<60 — 0°0′X″). Сохраняет знак.
+function secToDMS(totalSec){
+  if(Math.abs(totalSec) < 60) return { d: 0, m: 0, s: totalSec };
+  if(totalSec < 0){
+    const absS = Math.floor(-totalSec);
+    const d = -Math.ceil(absS / 3600);
+    const rem = 3600 * Math.ceil(absS / 3600) - absS;
+    const m = Math.floor(rem / 60);
+    const s = rem % 60;
+    return { d, m, s };
+  }
+  let s = Math.floor(totalSec);
+  const d = Math.floor(s / 3600);
+  s = s % 3600;
+  const m = Math.floor(s / 60);
+  s = s % 60;
+  return { d, m, s };
+}
+// Форматирование секунд дуги в строку: при |totalSec|<60 — только секунды; иначе °′″ (минуты и секунды строго 0–59)
+function formatDMS(totalSec){
+  if(typeof totalSec !== 'number' || !isFinite(totalSec)) return '—″';
+  if(totalSec < 0) return '−' + formatDMS(-totalSec);
+  if(totalSec < 60) return totalSec + '″';
+  const n = secToDMS(totalSec);
+  let d = n.d, m = n.m, s = Math.round(n.s);
+  if(s >= 60){ s = 0; m++; }
+  if(s < 0){ s += 60; m--; }
+  if(m >= 60){ m = 0; d++; }
+  if(m < 0){ m += 60; d--; }
+  m = Math.max(0, Math.min(59, m));
+  s = Math.max(0, Math.min(59, s));
+  if(d >= 360) d = d % 360;
+  return d + '°' + String(m).padStart(2,'0') + '′' + String(s).padStart(2,'0') + '″';
+}
+// Парсинг DMS: на строке либо только секунды (каждое число отдельно), либо цепочка троек °′″ (каждые 3 числа = один угол). Если в тройке минуты/секунды ≥60 — приводим к 0–59.
 function pnDms(t){
   const lines = t.trim().split(/[\r\n]+/);
   const out = [];
   for(const line of lines){
-    const parts = line.replace(/,/g,'.').trim().split(/\s+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
-    if(parts.length>=3) out.push(parts[0]*3600 + parts[1]*60 + parts[2]);
-    else parts.forEach(x=>out.push(x));
+    const parts = line.replace(/,/g,' ').trim().split(/\s+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+    if(parts.length >= 3 && parts.length % 3 === 0){
+      for(let i = 0; i < parts.length; i += 3){
+        const d = parts[i], m = parts[i+1], sec = parts[i+2];
+        let totalSec = d * 3600 + m * 60 + sec;
+        if(m >= 60 || m < 0 || sec >= 60 || sec < 0){ const n = secToDMS(totalSec); totalSec = n.d*3600 + n.m*60 + n.s; }
+        out.push(totalSec);
+      }
+    } else if(parts.length >= 3){
+      const triplets = Math.floor(parts.length / 3);
+      for(let i = 0; i < triplets; i++){
+        const d = parts[i*3], m = parts[i*3+1], sec = parts[i*3+2];
+        let totalSec = d * 3600 + m * 60 + sec;
+        if(m >= 60 || m < 0 || sec >= 60 || sec < 0){ const n = secToDMS(totalSec); totalSec = n.d*3600 + n.m*60 + n.s; }
+        out.push(totalSec);
+      }
+      for(let i = triplets * 3; i < parts.length; i++) out.push(parts[i]);
+    } else {
+      parts.forEach(x=>out.push(x));
+    }
   }
   return out;
 }
@@ -598,7 +649,7 @@ function arExample(){
 function calcAR(){
   const isM = arMode==='m';
   const raw = isM ? document.getElementById('ar-input-m').value : document.getElementById('ar-input-dms').value;
-  const v = isM ? pn(raw) : pnDms(raw);
+  const v = (isM ? pn(raw) : pnDms(raw)).filter(x=>isFinite(x));
   if(v.length<2){alert('Введите хотя бы 2 значения');return;}
   const n=v.length, sum=v.reduce((a,b)=>a+b,0), mean=sum/n;
   const sq2=v.reduce((a,x)=>a+x*x,0), m=Math.sqrt(sq2/n), mm=m/Math.sqrt(2*n), dp=3*m;
@@ -607,22 +658,25 @@ function calcAR(){
   const out=v.filter(x=>Math.abs(x)>dp).length;
   const u = isM ? ' м' : '″';
   const uShort = isM ? 'м' : 'сек';
+  const arFmt = (v,sgn)=>{
+    if(isM) return (sgn&&v>=0?'+':'')+fnSmart(v,5)+' м';
+    if(Math.abs(v)<60) return (sgn&&v>=0?'+':'')+fnSmart(v,3)+'″';
+    return (sgn&&v>=0?'+':'')+formatDMS(v);
+  };
 
   document.getElementById('ar-main').innerHTML=
-    ri('n измерений',n)+ri('СКП m ('+uShort+')','±'+fnSmart(m, isM?5:3)+u)+
-    ri('Точность m_m','±'+fnSmart(mm, isM?6:4)+u,'p')+ri('m ± m_m',fnSmart(m, isM?5:3)+'±'+fnSmart(mm, isM?5:3)+u,'g')+
-    ri('Δ_пред = 3m','±'+fnSmart(dp, isM?5:3)+u,'o')+ri('Σf ('+uShort+')',fsSmart(sum, isM?5:3)+u)+
-    ri('Среднее',fsSmart(mean, isM?5:4)+u,'p')+ri('Макс |f|',fnSmart(maxA, isM?4:2)+u);
+    ri('n измерений',n)+ri('СКП m ('+uShort+')','±'+arFmt(m,0))+ri('Точность m_m','±'+arFmt(mm,0),'p')+ri('m ± m_m',arFmt(m,0)+' ± '+arFmt(mm,0),'g')+
+    ri('Δ_пред = 3m','±'+arFmt(dp,0),'o')+ri('Σf ('+uShort+')',arFmt(sum,1))+ri('Среднее',arFmt(mean,1),'p')+ri('Макс |f|',arFmt(maxA,0));
 
   const annotItems = [
     { name: 'n измерений', val: n, formula: 'n — число введённых невязок', why: 'Подсчитано количество значений в вашем вводе.' },
-    { name: 'СКП m', val: '±'+fnSmart(m, isM?5:3)+u, formula: 'm = √([Δ²]/n)', why: '[Δ²] = Σf_i² — сумма квадратов невязок. СКП по формуле Гаусса для истинных ошибок (невязок).' },
-    { name: 'Точность m_m', val: '±'+fnSmart(mm, isM?6:4)+u, formula: 'm_m = m/√(2n)', why: 'Оценка средней квадратической погрешности самой СКП; тем точнее, чем больше n.' },
-    { name: 'm ± m_m', val: fnSmart(m, isM?5:3)+'±'+fnSmart(mm, isM?5:3)+u, formula: 'Итоговая запись СКП с её точностью', why: 'Результат представляют как m ± m_m в тех же единицах.' },
-    { name: 'Δ_пред = 3m', val: '±'+fnSmart(dp, isM?5:3)+u, formula: 'Δ_пред = t·m при t=3', why: 'Предельная погрешность (утроенная СКП); при нормальном распределении ≈99.7% ошибок внутри ±3m.' },
-    { name: 'Σf', val: fsSmart(sum, isM?5:3)+u, formula: '[f] = Σf_i', why: 'Сумма всех невязок; для случайных погрешностей должна быть близка к нулю.' },
-    { name: 'Среднее', val: fsSmart(mean, isM?5:4)+u, formula: 'x̄ = [f]/n', why: 'Среднее арифметическое невязок; при симметрии распределения близко к нулю.' },
-    { name: 'Макс |f|', val: fnSmart(maxA, isM?4:2)+u, formula: 'max|f_i|', why: 'Наибольшая по модулю невязка; не должна превышать Δ_пред.' }
+    { name: 'СКП m', val: '±'+arFmt(m,0), formula: 'm = √([Δ²]/n)', why: 'Сначала берутся погрешности измерений Δ_i (ваши невязки). Для каждой находится квадрат погрешности Δ_i². Квадраты складываются: [Δ²]=ΣΔ_i². Затем подставляется в формулу СКП: m=√([Δ²]/n). Углы выводятся в °′″ (минуты и секунды 0–59).' },
+    { name: 'Точность m_m', val: '±'+arFmt(mm,0), formula: 'm_m = m/√(2n)', why: 'Оценка средней квадратической погрешности самой СКП; тем точнее, чем больше n.' },
+    { name: 'm ± m_m', val: arFmt(m,0)+' ± '+arFmt(mm,0), formula: 'Итоговая запись СКП с её точностью', why: 'Результат представляют как m ± m_m. Углы в °′″ (0–59).' },
+    { name: 'Δ_пред = 3m', val: '±'+arFmt(dp,0), formula: 'Δ_пред = t·m при t=3', why: 'Предельная погрешность (утроенная СКП); при нормальном распределении ≈99.7% ошибок внутри ±3m.' },
+    { name: 'Σf', val: arFmt(sum,1), formula: '[f] = Σf_i', why: 'Сумма всех невязок; для случайных погрешностей должна быть близка к нулю.' },
+    { name: 'Среднее', val: arFmt(mean,1), formula: 'x̄ = [f]/n', why: 'Среднее арифметическое невязок; при симметрии распределения близко к нулю.' },
+    { name: 'Макс |f|', val: arFmt(maxA,0), formula: 'max|f_i|', why: 'Наибольшая по модулю невязка; не должна превышать Δ_пред. Всегда в °′″ (0–59).' }
   ];
   document.getElementById('ar-annot-wrap').innerHTML = `
     <details>
@@ -636,11 +690,11 @@ function calcAR(){
   document.getElementById('ar-checks').innerHTML=`
     <div class="check-item ${c1?'check-pass':'check-fail'}">
       <span class="check-icon">${c1?'✅':'❌'}</span>
-      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${fsSmart(mean,4)}${u} — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${arFmt(mean,1)} — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c2?'check-pass':'check-fail'}">
       <span class="check-icon">${c2?'✅':'❌'}</span>
-      <div><strong>Ограниченность</strong>Δ_пред=±${fnSmart(dp,3)}${u}; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Ограниченность</strong>Δ_пред=±${arFmt(dp,0)}; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c3?'check-pass':'check-fail'}">
       <span class="check-icon">${c3?'✅':'❌'}</span>
@@ -658,18 +712,18 @@ function calcAR(){
   document.getElementById('ar-hist').innerHTML=`
     <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:8px">${bc} интервалов, n=${n}</div>
     <div class="hist-bars">${bins.map(b=>`<div class="hb" style="height:${Math.max(4,Math.round(b/maxB*80))}px"></div>`).join('')}</div>
-    <div class="hist-labels">${bins.map((_,i)=>`<div class="hl">${fnSmart(lo+i*bw,1)}</div>`).join('')}</div>
+    <div class="hist-labels">${bins.map((_,i)=>`<div class="hl">${isM ? fnSmart(lo+i*bw,1) : arFmt(lo+i*bw,0)}</div>`).join('')}</div>
     <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
-      <span style="color:var(--accent)">±m</span>=±${fnSmart(m,3)}${u} &nbsp;<span style="color:var(--accent2)">3m</span>=±${fnSmart(dp,3)}${u}</div>`;
+      <span style="color:var(--accent)">±m</span>=±${arFmt(m,0)} &nbsp;<span style="color:var(--accent2)">3m</span>=±${arFmt(dp,0)}</div>`;
 
   const sqUnit = isM ? 'м²' : 'кв.сек';
   document.getElementById('ar-steps').innerHTML=`
-    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${fnSmart(lo,2)}…${fnSmart(hi,2)} ${uShort}</div></div>
+    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${isM ? fnSmart(lo,2)+'…'+fnSmart(hi,2) : arFmt(lo,0)+'…'+arFmt(hi,0)} ${uShort}</div></div>
     <div class="step">Сумма квадратов [Δ²]=Σf²<div class="step-f">[Δ²]=${fnSmart(sq2,4)} ${sqUnit}</div></div>
-    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fnSmart(sq2,4)}/${n})=±${fnSmart(m,3)} ${uShort}</div></div>
-    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=${fnSmart(m,3)}/√${2*n}=±${fnSmart(mm,4)} ${uShort}</div></div>
-    <div class="step">Результат<div class="step-f">m=±${fnSmart(m,3)}±${fnSmart(mm,3)} (${uShort})</div></div>
-    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×${fnSmart(m,3)}=±${fnSmart(dp,3)} ${uShort}</div></div>
+    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fnSmart(sq2,4)}/${n})=±${arFmt(m,0)}</div></div>
+    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=±${arFmt(mm,0)}</div></div>
+    <div class="step">Результат<div class="step-f">m=±${arFmt(m,0)}±${arFmt(mm,0)}</div></div>
+    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×m=±${arFmt(dp,0)}</div></div>
     <div class="step">Проверка свойств<div class="step-f">Симметрия ${c1?'✓':'✗'} | Ограниченность ${c2?'✓':'✗'} | Уничтожение ${c3?'✓':'✗'}</div></div>`;
 
   document.getElementById('ar-result').classList.remove('hidden');
@@ -684,6 +738,7 @@ function calcLev(){
   if(!hv.length){alert('Введите превышения');return;}
   if(dv.length!==hv.length)dv=new Array(hv.length).fill(1);
   const sumH=hv.reduce((a,b)=>a+b,0), sumD=dv.reduce((a,b)=>a+b,0);
+  if(!sumD || !isFinite(sumD)){alert('Сумма длин секций должна быть положительной');return;}
   const fh=sumH-(HB-HA), k=cls==='3'?5:cls==='4'?10:50, fdop=k*Math.sqrt(sumD);
   const ok=Math.abs(fh*1000)<=fdop;
   const corr=dv.map(d=>-fh*d/sumD), adjH=hv.map((h,i)=>h+corr[i]);
@@ -714,11 +769,13 @@ function calcTh(){
   adjA.forEach(b=>{let a=alphas[alphas.length-1]-b+180;while(a<0)a+=360;while(a>=360)a-=360;alphas.push(a);});
   const R=Math.PI/180, dX=sid.map((d,i)=>d*Math.cos(alphas[i]*R)), dY=sid.map((d,i)=>d*Math.sin(alphas[i]*R));
   const sumD=sid.reduce((a,b)=>a+b,0), fx=dX.reduce((a,b)=>a+b,0)-(xn-x0), fy=dY.reduce((a,b)=>a+b,0)-(yn-y0);
+  if(!sumD || !isFinite(sumD)){alert('Сумма сторон должна быть положительной');return;}
   const fss=Math.sqrt(fx*fx+fy*fy), T=fss/sumD;
   const cx=sid.map(d=>-fx*d/sumD), cy=sid.map(d=>-fy*d/sumD);
 
+  const fbStr = formatDMS(fb * 60);
   document.getElementById('th-main').innerHTML=
-    ri('f_β (′)',fsSmart(fb,2),Math.abs(fb)>fdop?'r':'')+ri('Допуск ±1′√n','±'+fnSmart(fdop,2)+'′')+
+    ri('f_β',fbStr,Math.abs(fb)>fdop?'r':'')+ri('Допуск ±1′√n','±'+fnSmart(fdop,2)+'′')+
     ri('Угл. невязка',Math.abs(fb)<=fdop?'✓ НОРМА':'✗ ПРЕВЫШЕН',Math.abs(fb)<=fdop?'g':'r')+
     ri('f_s (м)',fnSmart(fss,4),'o')+ri('1/T',Math.round(1/T),'g')+ri('Σ длин',fnSmart(sumD,3)+' м');
 
@@ -742,8 +799,9 @@ function calcInv(){
   const x2=+document.getElementById('ix2').value||0, y2=+document.getElementById('iy2').value||0;
   const dx=x2-x1, dy=y2-y1, dist=Math.sqrt(dx*dx+dy*dy);
   let al=Math.atan2(dy,dx)*180/Math.PI; if(al<0)al+=360;
-  const deg=Math.floor(al), mf=(al-deg)*60, min=Math.floor(mf), sec=Math.round((mf-min)*60);
-  document.getElementById('inv-a').textContent=`${deg}°${String(min).padStart(2,'0')}′${String(sec).padStart(2,'0')}″`;
+  let totalSec=Math.round(al*3600);
+  if(totalSec>=360*3600) totalSec=0;
+  document.getElementById('inv-a').textContent=formatDMS(totalSec);
   document.getElementById('inv-d').textContent=fn(dist,4)+' м';
 }
 
@@ -764,9 +822,11 @@ function calcLim(){
 // ── ВЗВЕШЕННЫЕ ────────────────────────────────────────────
 function calcWt(){
   const lines=document.getElementById('wt-in').value.trim().split('\n');
-  const data=lines.map(l=>{const p=l.split(/[;,\s]+/);return{l:parseFloat(p[0]),p:parseFloat(p[1])||1};}).filter(d=>!isNaN(d.l));
+  const data=lines.map(l=>{const p=l.replace(/[;,\s]+/g,' ').trim().split(/\s+/);return{l:parseFloat(p[0]),p:parseFloat(p[1])||1};}).filter(d=>!isNaN(d.l));
   if(data.length<2){alert('Введите хотя бы 2 строки');return;}
-  const sp=data.reduce((a,d)=>a+d.p,0), spl=data.reduce((a,d)=>a+d.p*d.l,0), mean=spl/sp;
+  const sp=data.reduce((a,d)=>a+d.p,0), spl=data.reduce((a,d)=>a+d.p*d.l,0);
+  if(!sp||!isFinite(sp)||sp<=1){alert('Сумма весов должна быть больше 1 (для оценки СКП)');return;}
+  const mean=spl/sp;
   const v=data.map(d=>d.l-mean), spv2=data.reduce((a,d,i)=>a+d.p*v[i]*v[i],0);
   const mu=Math.sqrt(spv2/(sp-1)), mx=mu/Math.sqrt(sp);
 
