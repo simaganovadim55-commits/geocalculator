@@ -222,10 +222,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="card">
       <div class="card-title"><span class="ct-icon">△</span>Данные</div>
-      <div class="info"><strong>Подсказка:</strong> Невязки f<sub>β</sub> в <strong>секундах</strong> (″). Ввод через пробел или запятую. Нужно не менее 2 значений. СКП считается по одной формуле для любых единиц (секунды, метры и т.д.) — результат получается в тех же единицах, что и ввод.</div>
+      <div class="info"><strong>Подсказка:</strong> Невязки f<sub>β</sub> в <strong>секундах</strong> (″). Принимаются <strong>целые и дробные</strong> (например: 1, -2, 1.5). Ввод через пробел или запятую. Нужно не менее 2 значений. СКП считается по одной формуле для любых единиц — результат в тех же единицах, что и ввод.</div>
       <div class="field">
         <label>Значения невязок (сек)</label>
-        <textarea id="ar-input" placeholder="+1.02, +0.41, +0.02, -1.88..."></textarea>
+        <textarea id="ar-input" placeholder="1 -2 1.5 0.41 -1.88 2 ..."></textarea>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="calcAR()">▶ Рассчитать</button>
@@ -255,7 +255,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="card">
       <div class="card-title"><span class="ct-icon">⊟</span>Параметры</div>
-      <div class="info"><strong>Подсказка:</strong> H_A и H_B — отметки в <strong>метрах</strong>. Превышения h_i в м, длины секций d_i в <strong>км</strong>; каждое значение с новой строки. Порядок h_i и d_i должен совпадать (первая строка — первый участок).</div>
+      <div class="info"><strong>Подсказка:</strong> H_A и H_B — отметки в <strong>метрах</strong>. Превышения h_i в м, длины секций d_i в <strong>км</strong>; принимаются <strong>целые и дробные</strong>. Каждое значение с новой строки. Порядок h_i и d_i должен совпадать.</div>
       <div class="field-row">
         <div class="field"><label>H_A (м)</label><input type="number" id="lev-ha" value="100.000" step="0.001"></div>
         <div class="field"><label>H_B (м)</label><input type="number" id="lev-hb" value="98.325" step="0.001"></div>
@@ -294,7 +294,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="card">
       <div class="card-title"><span class="ct-icon">∠</span>Опорные данные</div>
-      <div class="info"><strong>Подсказка:</strong> Углы β — <strong>правые</strong>, в <strong>градусах</strong>. Дирекционные углы α нач/кон и координаты — в градусах и метрах. Углы и стороны вводите по одному на строку, в порядке хода.</div>
+      <div class="info"><strong>Подсказка:</strong> Углы β — <strong>правые</strong>, в <strong>градусах</strong>. Дирекционные углы α нач/кон и координаты — в градусах и метрах. Принимаются <strong>целые и дробные</strong>. Углы и стороны — по одному на строку, в порядке хода.</div>
       <div class="field-row">
         <div class="field"><label>α нач (°)</label><input type="number" id="th-a0" value="62.5" step="0.01"></div>
         <div class="field"><label>α кон (°)</label><input type="number" id="th-an" value="124.75" step="0.01"></div>
@@ -421,10 +421,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
 <div class="tab-pane" id="tk-t3">
   <div class="card">
     <div class="card-title"><span class="ct-icon">⚖</span>Взвешенные измерения</div>
-    <div class="info"><strong>Подсказка:</strong> Формат: <strong>значение ; вес</strong> — одна строка. Десятичный разделитель — точка. Пример: 100.325 ; 2</div>
+    <div class="info"><strong>Подсказка:</strong> Формат: <strong>значение ; вес</strong> — одна строка. Принимаются <strong>целые и дробные</strong> (разделитель — точка или запятая). Пример: 100.325 ; 2 или 100 ; 1</div>
     <div class="field">
       <label>Измерения и веса</label>
-      <textarea id="wt-in" placeholder="100.325; 1&#10;100.318; 2&#10;100.330; 3&#10;100.322; 4"></textarea>
+      <textarea id="wt-in" placeholder="100.325; 1&#10;100; 2&#10;100.33; 3&#10;100.32; 4"></textarea>
     </div>
     <button class="btn btn-primary" onclick="calcWt()">▶ Рассчитать</button>
   </div>
@@ -518,9 +518,23 @@ function switchTab(g,idx,btn){
 }
 
 // ── HELPERS ───────────────────────────────────────────────
-const pn = t=>t.replace(/[,;\n\r\t]+/g,' ').trim().split(/\s+/).map(s=>parseFloat(s.replace(',','.'))).filter(v=>!isNaN(v));
+// Парсинг: целые и дробные (разделитель — точка или запятая)
+const pn = t=>t.replace(/[,;\n\r\t]+/g,' ').trim().split(/\s+/).map(s=>{
+  const x = s.replace(',','.').trim();
+  if(x==='') return NaN;
+  const num = parseFloat(x);
+  return isNaN(num) ? NaN : num;
+}).filter(v=>!isNaN(v));
 const fn = (v,d=4)=>typeof v==='number'?v.toFixed(d):String(v);
 const fs = (v,d=4)=>typeof v==='number'?(v>=0?'+':'')+v.toFixed(d):String(v);
+// Умное форматирование: целые без дробной части, дробные — без лишних нулей
+const fnSmart = (v,d=4)=> {
+  if(typeof v!=='number'||isNaN(v)) return String(v);
+  const r = Math.round(v*1e12)/1e12;
+  if(Math.abs(r-Math.round(r))<1e-9) return String(Math.round(r));
+  return r.toFixed(d).replace(/\.?0+$/,'');
+};
+const fsSmart = (v,d=4)=>typeof v==='number'?(v>=0?'+':'')+fnSmart(v,d):String(v);
 const ri = (l,v,c='')=>`<div class="result-item"><div class="ri-label">${l}</div><div class="ri-val ${c}">${v}</div></div>`;
 
 // ── УГЛОВЫЕ НЕВЯЗКИ ───────────────────────────────────────
@@ -544,20 +558,20 @@ function calcAR(){
   const out=v.filter(x=>Math.abs(x)>dp).length;
 
   document.getElementById('ar-main').innerHTML=
-    ri('n измерений',n)+ri('СКП m (″)','±'+fn(m,3))+
-    ri('Точность m_m','±'+fn(mm,4),'p')+ri('m ± m_m',fn(m,3)+'±'+fn(mm,3),'g')+
-    ri('Δ_пред = 3m','±'+fn(dp,3),'o')+ri('Σf (сек)',fs(sum,3))+
-    ri('Среднее',fs(mean,4),'p')+ri('Макс |f|',fn(maxA,2)+'″');
+    ri('n измерений',n)+ri('СКП m (″)','±'+fnSmart(m,3))+
+    ri('Точность m_m','±'+fnSmart(mm,4),'p')+ri('m ± m_m',fnSmart(m,3)+'±'+fnSmart(mm,3),'g')+
+    ri('Δ_пред = 3m','±'+fnSmart(dp,3),'o')+ri('Σf (сек)',fsSmart(sum,3))+
+    ri('Среднее',fsSmart(mean,4),'p')+ri('Макс |f|',fnSmart(maxA,2)+'″');
 
   const c1=Math.abs(mean)<=2*m/Math.sqrt(n), c2=out===0, c3=Math.abs(posN-negN)<=1.5*Math.sqrt(n);
   document.getElementById('ar-checks').innerHTML=`
     <div class="check-item ${c1?'check-pass':'check-fail'}">
       <span class="check-icon">${c1?'✅':'❌'}</span>
-      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${fn(mean,4)}″ — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${fsSmart(mean,4)}″ — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c2?'check-pass':'check-fail'}">
       <span class="check-icon">${c2?'✅':'❌'}</span>
-      <div><strong>Ограниченность</strong>Δ_пред=±${fn(dp,3)}″; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Ограниченность</strong>Δ_пред=±${fnSmart(dp,3)}″; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c3?'check-pass':'check-fail'}">
       <span class="check-icon">${c3?'✅':'❌'}</span>
@@ -568,24 +582,24 @@ function calcAR(){
       <div><strong>Вывод</strong>${(c1&&c2&&c3)?'Погрешности случайные.':'Обнаружены отклонения. Требуется анализ.'}</div>
     </div>`;
 
-  const lo=Math.min(...v),hi=Math.max(...v),bc=Math.max(5,Math.ceil(Math.sqrt(n))),bw=(hi-lo)/bc;
+  const lo=Math.min(...v),hi=Math.max(...v),bc=Math.max(5,Math.ceil(Math.sqrt(n))),bw=(hi-lo)/bc||1;
   const bins=new Array(bc).fill(0);
   v.forEach(x=>bins[Math.min(Math.floor((x-lo)/bw),bc-1)]++);
-  const maxB=Math.max(...bins);
+  const maxB=Math.max(...bins,1);
   document.getElementById('ar-hist').innerHTML=`
     <div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:8px">${bc} интервалов, n=${n}</div>
     <div class="hist-bars">${bins.map(b=>`<div class="hb" style="height:${Math.max(4,Math.round(b/maxB*80))}px"></div>`).join('')}</div>
-    <div class="hist-labels">${bins.map((_,i)=>`<div class="hl">${fn(lo+i*bw,1)}</div>`).join('')}</div>
+    <div class="hist-labels">${bins.map((_,i)=>`<div class="hl">${fnSmart(lo+i*bw,1)}</div>`).join('')}</div>
     <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
-      <span style="color:var(--accent)">±m</span>=±${fn(m,3)}″ &nbsp;<span style="color:var(--accent2)">3m</span>=±${fn(dp,3)}″</div>`;
+      <span style="color:var(--accent)">±m</span>=±${fnSmart(m,3)}″ &nbsp;<span style="color:var(--accent2)">3m</span>=±${fnSmart(dp,3)}″</div>`;
 
   document.getElementById('ar-steps').innerHTML=`
-    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${fn(lo,2)}″…${fn(hi,2)}″</div></div>
-    <div class="step">Сумма квадратов [Δ²]=Σf_β²<div class="step-f">[Δ²]=${fn(sq2,4)} кв.сек</div></div>
-    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fn(sq2,4)}/${n})=±${fn(m,3)}″</div></div>
-    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=${fn(m,3)}/√${2*n}=±${fn(mm,4)}″</div></div>
-    <div class="step">Результат<div class="step-f">m=±${fn(m,3)}±${fn(mm,3)} (сек)</div></div>
-    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×${fn(m,3)}=±${fn(dp,3)}″</div></div>
+    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${fnSmart(lo,2)}″…${fnSmart(hi,2)}″</div></div>
+    <div class="step">Сумма квадратов [Δ²]=Σf_β²<div class="step-f">[Δ²]=${fnSmart(sq2,4)} кв.сек</div></div>
+    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fnSmart(sq2,4)}/${n})=±${fnSmart(m,3)}″</div></div>
+    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=${fnSmart(m,3)}/√${2*n}=±${fnSmart(mm,4)}″</div></div>
+    <div class="step">Результат<div class="step-f">m=±${fnSmart(m,3)}±${fnSmart(mm,3)} (сек)</div></div>
+    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×${fnSmart(m,3)}=±${fnSmart(dp,3)}″</div></div>
     <div class="step">Проверка свойств<div class="step-f">Симметрия ${c1?'✓':'✗'} | Ограниченность ${c2?'✓':'✗'} | Уничтожение ${c3?'✓':'✗'}</div></div>`;
 
   document.getElementById('ar-result').classList.remove('hidden');
@@ -605,15 +619,15 @@ function calcLev(){
   const corr=dv.map(d=>-fh*d/sumD), adjH=hv.map((h,i)=>h+corr[i]);
 
   document.getElementById('lev-main').innerHTML=
-    ri('Σh',fn(sumH,4)+' м')+ri('H_B−H_A',fn(HB-HA,4)+' м')+
-    ri('Невязка f_h',fn(fh*1000,1)+' мм',Math.abs(fh*1000)>fdop?'r':'')+
-    ri('Допуск ±'+k+'√L','±'+fn(fdop,1)+' мм','o')+
+    ri('Σh',fnSmart(sumH,4)+' м')+ri('H_B−H_A',fnSmart(HB-HA,4)+' м')+
+    ri('Невязка f_h',fnSmart(fh*1000,1)+' мм',Math.abs(fh*1000)>fdop?'r':'')+
+    ri('Допуск ±'+k+'√L','±'+fnSmart(fdop,1)+' мм','o')+
     ri('Оценка',ok?'✓ НОРМА':'✗ ПРЕВЫШЕН',ok?'g':'r')+
-    ri('Σ длин',fn(sumD,3)+' км');
+    ri('Σ длин',fnSmart(sumD,3)+' км');
 
   let rows='',H=HA;
-  rows+=`<tr><td class="td-hi">A</td><td>—</td><td>—</td><td>—</td><td class="td-hi">${fn(HA,4)}</td></tr>`;
-  adjH.forEach((h,i)=>{H+=h;rows+=`<tr><td>${i+1}</td><td>${fs(hv[i],4)}</td><td>${fn(corr[i]*1000,1)} мм</td><td>${fs(h,4)}</td><td class="td-hi">${fn(H,4)}</td></tr>`;});
+  rows+=`<tr><td class="td-hi">A</td><td>—</td><td>—</td><td>—</td><td class="td-hi">${fnSmart(HA,4)}</td></tr>`;
+  adjH.forEach((h,i)=>{H+=h;rows+=`<tr><td>${i+1}</td><td>${fsSmart(hv[i],4)}</td><td>${fnSmart(corr[i]*1000,1)} мм</td><td>${fsSmart(h,4)}</td><td class="td-hi">${fnSmart(H,4)}</td></tr>`;});
   document.getElementById('lev-tbl').innerHTML=`<table class="dt"><thead><tr><th>Тч</th><th>h_i</th><th>Попр.</th><th>h_исп</th><th>H (м)</th></tr></thead><tbody>${rows}</tbody></table>`;
   document.getElementById('lev-result').classList.remove('hidden');
 }
@@ -634,13 +648,13 @@ function calcTh(){
   const cx=sid.map(d=>-fx*d/sumD), cy=sid.map(d=>-fy*d/sumD);
 
   document.getElementById('th-main').innerHTML=
-    ri('f_β (′)',fs(fb,2),Math.abs(fb)>fdop?'r':'')+ri('Допуск ±1′√n','±'+fn(fdop,2)+'′')+
+    ri('f_β (′)',fsSmart(fb,2),Math.abs(fb)>fdop?'r':'')+ri('Допуск ±1′√n','±'+fnSmart(fdop,2)+'′')+
     ri('Угл. невязка',Math.abs(fb)<=fdop?'✓ НОРМА':'✗ ПРЕВЫШЕН',Math.abs(fb)<=fdop?'g':'r')+
-    ri('f_s (м)',fn(fss,4),'o')+ri('1/T',Math.round(1/T),'g')+ri('Σ длин',fn(sumD,3)+' м');
+    ri('f_s (м)',fnSmart(fss,4),'o')+ri('1/T',Math.round(1/T),'g')+ri('Σ длин',fnSmart(sumD,3)+' м');
 
   let rows='',cx2=x0,cy2=y0;
-  rows+=`<tr><td class="td-hi">Н</td><td>—</td><td>—</td><td>—</td><td class="td-hi">${fn(x0,3)}</td><td class="td-hi">${fn(y0,3)}</td></tr>`;
-  sid.forEach((_,i)=>{cx2+=dX[i]+cx[i];cy2+=dY[i]+cy[i];rows+=`<tr><td>${i+1}</td><td>${fn(alphas[i],2)}°</td><td>${fn(sid[i],2)}</td><td>${fs(dX[i]+cx[i],3)}</td><td class="td-hi">${fn(cx2,3)}</td><td class="td-hi">${fn(cy2,3)}</td></tr>`;});
+  rows+=`<tr><td class="td-hi">Н</td><td>—</td><td>—</td><td>—</td><td class="td-hi">${fnSmart(x0,3)}</td><td class="td-hi">${fnSmart(y0,3)}</td></tr>`;
+  sid.forEach((_,i)=>{cx2+=dX[i]+cx[i];cy2+=dY[i]+cy[i];rows+=`<tr><td>${i+1}</td><td>${fnSmart(alphas[i],2)}°</td><td>${fnSmart(sid[i],2)}</td><td>${fsSmart(dX[i]+cx[i],3)}</td><td class="td-hi">${fnSmart(cx2,3)}</td><td class="td-hi">${fnSmart(cy2,3)}</td></tr>`;});
   document.getElementById('th-tbl').innerHTML=`<table class="dt"><thead><tr><th>Тч</th><th>α(°)</th><th>d(м)</th><th>ΔX</th><th>X</th><th>Y</th></tr></thead><tbody>${rows}</tbody></table>`;
   document.getElementById('th-result').classList.remove('hidden');
 }
@@ -674,7 +688,7 @@ function calcProb(){
 }
 function calcLim(){
   const s=parseFloat(document.getElementById('lm-s').value)||1, t=parseFloat(document.getElementById('lm-t').value)||3;
-  document.getElementById('lm-res').textContent='±'+fn(t*s,3)+'″';
+  document.getElementById('lm-res').textContent='±'+fnSmart(t*s,3)+'″';
 }
 
 // ── ВЗВЕШЕННЫЕ ────────────────────────────────────────────
@@ -687,15 +701,15 @@ function calcWt(){
   const mu=Math.sqrt(spv2/(sp-1)), mx=mu/Math.sqrt(sp);
 
   document.getElementById('wt-main').innerHTML=
-    ri('Взвеш. средняя',fn(mean,5))+ri('[p]',fn(sp,2))+
-    ri('μ (ед. веса)','±'+fn(mu,5),'p')+ri('m_x̄','±'+fn(mx,5),'g')+
-    ri('Δ_пред','±'+fn(3*mx,5),'o');
+    ri('Взвеш. средняя',fnSmart(mean,5))+ri('[p]',fnSmart(sp,2))+
+    ri('μ (ед. веса)','±'+fnSmart(mu,5),'p')+ri('m_x̄','±'+fnSmart(mx,5),'g')+
+    ri('Δ_пред','±'+fnSmart(3*mx,5),'o');
 
   let rows='';
-  data.forEach((d,i)=>rows+=`<tr><td>${fn(d.l,5)}</td><td>${fn(d.p,2)}</td><td>${fs(v[i],5)}</td><td>${fn(d.p*v[i]*v[i],6)}</td></tr>`);
-  rows+=`<tr><td>Σ</td><td class="td-hi">${fn(sp,2)}</td><td>—</td><td class="td-hi">${fn(spv2,6)}</td></tr>`;
+  data.forEach((d,i)=>rows+=`<tr><td>${fnSmart(d.l,5)}</td><td>${fnSmart(d.p,2)}</td><td>${fsSmart(v[i],5)}</td><td>${fnSmart(d.p*v[i]*v[i],6)}</td></tr>`);
+  rows+=`<tr><td>Σ</td><td class="td-hi">${fnSmart(sp,2)}</td><td>—</td><td class="td-hi">${fnSmart(spv2,6)}</td></tr>`;
   document.getElementById('wt-tbl').innerHTML=`<table class="dt"><thead><tr><th>l_i</th><th>p_i</th><th>v_i</th><th>p·v²</th></tr></thead><tbody>${rows}</tbody></table>`;
-  document.getElementById('wt-f').innerHTML=`<span class="hi">x̄</span>=${fn(spl,4)}/${fn(sp,2)}=${fn(mean,5)}<br><span class="hi2">μ</span>=√(${fn(spv2,4)}/${fn(sp-1,2)})=±${fn(mu,5)}<br><span class="hi">m_x̄</span>=±${fn(mx,5)}`;
+  document.getElementById('wt-f').innerHTML=`<span class="hi">x̄</span>=${fnSmart(spl,4)}/${fnSmart(sp,2)}=${fnSmart(mean,5)}<br><span class="hi2">μ</span>=√(${fnSmart(spv2,4)}/${fnSmart(sp-1,2)})=±${fnSmart(mu,5)}<br><span class="hi">m_x̄</span>=±${fnSmart(mx,5)}`;
   document.getElementById('wt-result').classList.remove('hidden');
 }
 
