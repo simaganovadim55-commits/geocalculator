@@ -100,6 +100,19 @@ header{flex-shrink:0;height:60px;background:var(--bg2);border-bottom:1px solid v
 .ri-val.p{color:var(--accent2)}.ri-val.g{color:var(--green)}.ri-val.o{color:var(--gold)}.ri-val.r{color:var(--red)}
 .result-sep{height:1px;background:var(--border);margin:14px 0}
 .result-formula{font-family:var(--mono);font-size:11px;color:var(--text-dim);line-height:1.9}
+/* Collapsible annotations */
+.ar-annot-wrap{margin-top:14px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.ar-annot-wrap details{border:none}
+.ar-annot-wrap summary{font-size:12px;font-weight:700;color:var(--accent);padding:10px 14px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;background:var(--surface2);user-select:none}
+.ar-annot-wrap summary::-webkit-details-marker{display:none}
+.ar-annot-wrap summary::before{content:'';display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid currentColor;transition:transform .2s}
+.ar-annot-wrap details[open] summary::before{transform:rotate(-90deg)}
+.ar-annot-list{padding:8px 12px 12px}
+.ar-annot-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;font-size:12px;line-height:1.5}
+.ar-annot-item:last-child{margin-bottom:0}
+.ar-annot-item strong{color:var(--text-hi);display:block;margin-bottom:4px;font-size:12.5px}
+.ar-annot-f{font-family:var(--mono);font-size:11px;color:var(--accent2);margin-top:4px}
+.ar-annot-why{color:var(--text-dim);margin-top:4px;font-size:11.5px}
 .result-formula .hi{color:var(--accent)}.result-formula .hi2{color:var(--accent2)}.result-formula .hi3{color:var(--accent3)}
 
 /* TABS */
@@ -252,7 +265,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <button class="tab-btn" onclick="switchTab('ar',2,this)">График</button>
         <button class="tab-btn" onclick="switchTab('ar',3,this)">Шаги</button>
       </div>
-      <div class="tab-pane active" id="ar-t0"><div class="result-grid" id="ar-main"></div></div>
+      <div class="tab-pane active" id="ar-t0"><div class="result-grid" id="ar-main"></div><div id="ar-annot-wrap" class="ar-annot-wrap"></div></div>
       <div class="tab-pane" id="ar-t1"><div class="check-list" id="ar-checks"></div></div>
       <div class="tab-pane" id="ar-t2"><div id="ar-hist"></div></div>
       <div class="tab-pane" id="ar-t3"><div class="steps" id="ar-steps"></div></div>
@@ -600,6 +613,24 @@ function calcAR(){
     ri('Точность m_m','±'+fnSmart(mm, isM?6:4)+u,'p')+ri('m ± m_m',fnSmart(m, isM?5:3)+'±'+fnSmart(mm, isM?5:3)+u,'g')+
     ri('Δ_пред = 3m','±'+fnSmart(dp, isM?5:3)+u,'o')+ri('Σf ('+uShort+')',fsSmart(sum, isM?5:3)+u)+
     ri('Среднее',fsSmart(mean, isM?5:4)+u,'p')+ri('Макс |f|',fnSmart(maxA, isM?4:2)+u);
+
+  const annotItems = [
+    { name: 'n измерений', val: n, formula: 'n — число введённых невязок', why: 'Подсчитано количество значений в вашем вводе.' },
+    { name: 'СКП m', val: '±'+fnSmart(m, isM?5:3)+u, formula: 'm = √([Δ²]/n)', why: '[Δ²] = Σf_i² — сумма квадратов невязок. СКП по формуле Гаусса для истинных ошибок (невязок).' },
+    { name: 'Точность m_m', val: '±'+fnSmart(mm, isM?6:4)+u, formula: 'm_m = m/√(2n)', why: 'Оценка средней квадратической погрешности самой СКП; тем точнее, чем больше n.' },
+    { name: 'm ± m_m', val: fnSmart(m, isM?5:3)+'±'+fnSmart(mm, isM?5:3)+u, formula: 'Итоговая запись СКП с её точностью', why: 'Результат представляют как m ± m_m в тех же единицах.' },
+    { name: 'Δ_пред = 3m', val: '±'+fnSmart(dp, isM?5:3)+u, formula: 'Δ_пред = t·m при t=3', why: 'Предельная погрешность (утроенная СКП); при нормальном распределении ≈99.7% ошибок внутри ±3m.' },
+    { name: 'Σf', val: fsSmart(sum, isM?5:3)+u, formula: '[f] = Σf_i', why: 'Сумма всех невязок; для случайных погрешностей должна быть близка к нулю.' },
+    { name: 'Среднее', val: fsSmart(mean, isM?5:4)+u, formula: 'x̄ = [f]/n', why: 'Среднее арифметическое невязок; при симметрии распределения близко к нулю.' },
+    { name: 'Макс |f|', val: fnSmart(maxA, isM?4:2)+u, formula: 'max|f_i|', why: 'Наибольшая по модулю невязка; не должна превышать Δ_пред.' }
+  ];
+  document.getElementById('ar-annot-wrap').innerHTML = `
+    <details>
+      <summary>Как получены результаты (формулы и пояснения)</summary>
+      <div class="ar-annot-list">
+        ${annotItems.map(a=>`<div class="ar-annot-item"><strong>${a.name}</strong> → ${typeof a.val==='number'?a.val:a.val}<div class="ar-annot-f">${a.formula}</div><div class="ar-annot-why">${a.why}</div></div>`).join('')}
+      </div>
+    </details>`;
 
   const c1=Math.abs(mean)<=2*m/Math.sqrt(n), c2=out===0, c3=Math.abs(posN-negN)<=1.5*Math.sqrt(n);
   document.getElementById('ar-checks').innerHTML=`
