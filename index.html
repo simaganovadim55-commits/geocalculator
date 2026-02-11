@@ -240,10 +240,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <button class="tab-btn" id="ar-tab-m" onclick="switchArMode('m',this)">Метры (м)</button>
       </div>
       <div class="tab-pane active" id="ar-pane-dms">
-        <div class="info"><strong>Углы:</strong> невязки в <strong>секундах</strong> (″). Каждое число — одно измерение: <strong>сколько чисел, столько и измерений</strong>. Разделители — пробел или запятая; дробная часть — точка. Не менее 2 значений.</div>
+        <div class="info"><strong>Углы:</strong> <strong>запятая</strong> — разделитель измерений (сколько фрагментов между запятыми — столько измерений). Внутри фрагмента можно писать градусы с пробелами: <strong>1 30 45</strong> = 1°30′45″. Одно число = секунды; три числа через пробел = °′″. Дробная часть — точка. Не менее 2 измерений.</div>
         <div class="field">
-          <label>Невязки (сек)</label>
-          <textarea id="ar-input-dms" placeholder="1.02 -1.88 0.41 0.12 0.22"></textarea>
+          <label>Невязки (сек или ° ′ ″)</label>
+          <textarea id="ar-input-dms" placeholder="1.02, -1.88, 0.41, 1 30 0, 0 0 1.5"></textarea>
         </div>
       </div>
       <div class="tab-pane" id="ar-pane-m">
@@ -606,16 +606,24 @@ function formatDMS(totalSec){
   if(d >= 360) d = d % 360;
   return d + '°' + String(m).padStart(2,'0') + '′' + String(s).padStart(2,'0') + '″';
 }
-// Парсинг угловых невязок: сколько чисел — столько измерений (каждое число = значение в секундах)
+// Парсинг угловых невязок: запятая (или перевод строки) — разделитель измерений. Одно измерение = один фрагмент между запятыми. Внутри фрагмента пробелы допустимы (градусы °′″: 1 30 45). Точка — дробная часть.
 function pnDms(t){
-  return pn(t);
+  const out = [];
+  const tokens = t.replace(/\r\n?|\n/g, ',').split(',').map(s=>s.trim()).filter(Boolean);
+  for(const token of tokens){
+    const parts = token.split(/\s+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+    if(parts.length === 0) continue;
+    if(parts.length === 1) out.push(parts[0]);
+    else if(parts.length === 2) out.push(parts[0] * 60 + parts[1]);
+    else out.push(parts[0] * 3600 + parts[1] * 60 + parts[2]);
+  }
+  return out;
 }
 function arExample(){
   if(arMode==='dms'){
     document.getElementById('ar-input-dms').value=
-      '1.02 0.41 0.02 -1.88 -1.44 -0.25 0.12 0.22 -1.05 0.56\n'+
-      '-1.72 1.29 -1.81 -0.08 -0.50 -1.89 0.72 0.24 -0.13 0.59\n'+
-      '0 0 1.02  0 0 -1.88  0 0 0.41';
+      '1.02, 0.41, 0.02, -1.88, -1.44, -0.25, 0.12, 0.22, -1.05, 0.56, '+
+      '-1.72, 1.29, -1.81, -0.08, -0.50, 1 30 0, 0 0 1.5, 0 1 0';
   } else {
     document.getElementById('ar-input-m').value=
       '0.002 -0.001 0.003 0.001 -0.002 0.0015 -0.0008 0.0022 -0.0011 0.0009';
