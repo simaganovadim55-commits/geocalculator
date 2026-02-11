@@ -222,10 +222,23 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="card">
       <div class="card-title"><span class="ct-icon">△</span>Данные</div>
-      <div class="info"><strong>Подсказка:</strong> Невязки f<sub>β</sub> в <strong>секундах</strong> (″). Принимаются <strong>целые и дробные</strong> (например: 1, -2, 1.5). Ввод через пробел или запятую. Нужно не менее 2 значений. СКП считается по одной формуле для любых единиц — результат в тех же единицах, что и ввод.</div>
-      <div class="field">
-        <label>Значения невязок (сек)</label>
-        <textarea id="ar-input" placeholder="1 -2 1.5 0.41 -1.88 2 ..."></textarea>
+      <div class="tabs" style="margin-bottom:12px">
+        <button class="tab-btn active" id="ar-tab-dms" onclick="switchArMode('dms',this)">° ′ ″</button>
+        <button class="tab-btn" id="ar-tab-m" onclick="switchArMode('m',this)">Метры (м)</button>
+      </div>
+      <div class="tab-pane active" id="ar-pane-dms">
+        <div class="info"><strong>Углы:</strong> невязки в <strong>секундах</strong> (″) или в формате <strong>градусы минуты секунды</strong> (три числа через пробел). Одно число в строке = секунды; три числа = одна невязка в °′″. Целые и дробные. Не менее 2 значений.</div>
+        <div class="field">
+          <label>Невязки (° ′ ″ или сек)</label>
+          <textarea id="ar-input-dms" placeholder="1.02 -1.88 0.41&#10;0 0 1.02  0 0 -1.88"></textarea>
+        </div>
+      </div>
+      <div class="tab-pane" id="ar-pane-m">
+        <div class="info"><strong>Метры:</strong> линейные невязки в <strong>метрах</strong> (м). Целые и дробные. Ввод через пробел или запятую. Не менее 2 значений.</div>
+        <div class="field">
+          <label>Невязки (м)</label>
+          <textarea id="ar-input-m" placeholder="0.002 -0.001 0.003 0.001 -0.002"></textarea>
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="calcAR()">▶ Рассчитать</button>
@@ -538,40 +551,65 @@ const fsSmart = (v,d=4)=>typeof v==='number'?(v>=0?'+':'')+fnSmart(v,d):String(v
 const ri = (l,v,c='')=>`<div class="result-item"><div class="ri-label">${l}</div><div class="ri-val ${c}">${v}</div></div>`;
 
 // ── УГЛОВЫЕ НЕВЯЗКИ ───────────────────────────────────────
+let arMode = 'dms'; // 'dms' | 'm'
+function switchArMode(mode, btn){
+  arMode = mode;
+  document.querySelectorAll('#page-residuals .card .tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#page-residuals .card .tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(mode==='dms'?'ar-pane-dms':'ar-pane-m').classList.add('active');
+}
+// Парсинг DMS: строка с тремя числами = одна невязка в °′″; иначе каждое число = секунды
+function pnDms(t){
+  const lines = t.trim().split(/[\r\n]+/);
+  const out = [];
+  for(const line of lines){
+    const parts = line.replace(/,/g,'.').trim().split(/\s+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+    if(parts.length>=3) out.push(parts[0]*3600 + parts[1]*60 + parts[2]);
+    else parts.forEach(x=>out.push(x));
+  }
+  return out;
+}
 function arExample(){
-  document.getElementById('ar-input').value=
-    '+1.02 +0.41 +0.02 -1.88 -1.44 -0.25 +0.12 +0.22 -1.05 +0.56\n'+
-    '-1.72 +1.29 -1.81 -0.08 -0.50 -1.89 +0.72 +0.24 -0.13 +0.59\n'+
-    '-0.90 +1.22 -1.84 -0.44 +0.18 -0.08 -1.11 +2.51 -1.16 +1.65\n'+
-    '+2.80 -0.81 +1.04 +0.42 +0.68 +0.55 +0.22 +1.67 +0.11 +2.08\n'+
-    '-0.44 -0.28 -0.75 -0.80 -0.95 -0.58 +1.60 +1.85 +2.22 -2.59';
+  if(arMode==='dms'){
+    document.getElementById('ar-input-dms').value=
+      '1.02 0.41 0.02 -1.88 -1.44 -0.25 0.12 0.22 -1.05 0.56\n'+
+      '-1.72 1.29 -1.81 -0.08 -0.50 -1.89 0.72 0.24 -0.13 0.59\n'+
+      '0 0 1.02  0 0 -1.88  0 0 0.41';
+  } else {
+    document.getElementById('ar-input-m').value=
+      '0.002 -0.001 0.003 0.001 -0.002 0.0015 -0.0008 0.0022 -0.0011 0.0009';
+  }
   calcAR();
 }
-
 function calcAR(){
-  const v=pn(document.getElementById('ar-input').value);
+  const isM = arMode==='m';
+  const raw = isM ? document.getElementById('ar-input-m').value : document.getElementById('ar-input-dms').value;
+  const v = isM ? pn(raw) : pnDms(raw);
   if(v.length<2){alert('Введите хотя бы 2 значения');return;}
   const n=v.length, sum=v.reduce((a,b)=>a+b,0), mean=sum/n;
   const sq2=v.reduce((a,x)=>a+x*x,0), m=Math.sqrt(sq2/n), mm=m/Math.sqrt(2*n), dp=3*m;
   const posN=v.filter(x=>x>0).length, negN=v.filter(x=>x<0).length;
   const maxA=Math.max(...v.map(Math.abs));
   const out=v.filter(x=>Math.abs(x)>dp).length;
+  const u = isM ? ' м' : '″';
+  const uShort = isM ? 'м' : 'сек';
 
   document.getElementById('ar-main').innerHTML=
-    ri('n измерений',n)+ri('СКП m (″)','±'+fnSmart(m,3))+
-    ri('Точность m_m','±'+fnSmart(mm,4),'p')+ri('m ± m_m',fnSmart(m,3)+'±'+fnSmart(mm,3),'g')+
-    ri('Δ_пред = 3m','±'+fnSmart(dp,3),'o')+ri('Σf (сек)',fsSmart(sum,3))+
-    ri('Среднее',fsSmart(mean,4),'p')+ri('Макс |f|',fnSmart(maxA,2)+'″');
+    ri('n измерений',n)+ri('СКП m ('+uShort+')','±'+fnSmart(m, isM?5:3)+u)+
+    ri('Точность m_m','±'+fnSmart(mm, isM?6:4)+u,'p')+ri('m ± m_m',fnSmart(m, isM?5:3)+'±'+fnSmart(mm, isM?5:3)+u,'g')+
+    ri('Δ_пред = 3m','±'+fnSmart(dp, isM?5:3)+u,'o')+ri('Σf ('+uShort+')',fsSmart(sum, isM?5:3)+u)+
+    ri('Среднее',fsSmart(mean, isM?5:4)+u,'p')+ri('Макс |f|',fnSmart(maxA, isM?4:2)+u);
 
   const c1=Math.abs(mean)<=2*m/Math.sqrt(n), c2=out===0, c3=Math.abs(posN-negN)<=1.5*Math.sqrt(n);
   document.getElementById('ar-checks').innerHTML=`
     <div class="check-item ${c1?'check-pass':'check-fail'}">
       <span class="check-icon">${c1?'✅':'❌'}</span>
-      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${fsSmart(mean,4)}″ — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${fsSmart(mean,4)}${u} — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c2?'check-pass':'check-fail'}">
       <span class="check-icon">${c2?'✅':'❌'}</span>
-      <div><strong>Ограниченность</strong>Δ_пред=±${fnSmart(dp,3)}″; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Ограниченность</strong>Δ_пред=±${fnSmart(dp,3)}${u}; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c3?'check-pass':'check-fail'}">
       <span class="check-icon">${c3?'✅':'❌'}</span>
@@ -591,15 +629,16 @@ function calcAR(){
     <div class="hist-bars">${bins.map(b=>`<div class="hb" style="height:${Math.max(4,Math.round(b/maxB*80))}px"></div>`).join('')}</div>
     <div class="hist-labels">${bins.map((_,i)=>`<div class="hl">${fnSmart(lo+i*bw,1)}</div>`).join('')}</div>
     <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
-      <span style="color:var(--accent)">±m</span>=±${fnSmart(m,3)}″ &nbsp;<span style="color:var(--accent2)">3m</span>=±${fnSmart(dp,3)}″</div>`;
+      <span style="color:var(--accent)">±m</span>=±${fnSmart(m,3)}${u} &nbsp;<span style="color:var(--accent2)">3m</span>=±${fnSmart(dp,3)}${u}</div>`;
 
+  const sqUnit = isM ? 'м²' : 'кв.сек';
   document.getElementById('ar-steps').innerHTML=`
-    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${fnSmart(lo,2)}″…${fnSmart(hi,2)}″</div></div>
-    <div class="step">Сумма квадратов [Δ²]=Σf_β²<div class="step-f">[Δ²]=${fnSmart(sq2,4)} кв.сек</div></div>
-    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fnSmart(sq2,4)}/${n})=±${fnSmart(m,3)}″</div></div>
-    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=${fnSmart(m,3)}/√${2*n}=±${fnSmart(mm,4)}″</div></div>
-    <div class="step">Результат<div class="step-f">m=±${fnSmart(m,3)}±${fnSmart(mm,3)} (сек)</div></div>
-    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×${fnSmart(m,3)}=±${fnSmart(dp,3)}″</div></div>
+    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${fnSmart(lo,2)}…${fnSmart(hi,2)} ${uShort}</div></div>
+    <div class="step">Сумма квадратов [Δ²]=Σf²<div class="step-f">[Δ²]=${fnSmart(sq2,4)} ${sqUnit}</div></div>
+    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fnSmart(sq2,4)}/${n})=±${fnSmart(m,3)} ${uShort}</div></div>
+    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=${fnSmart(m,3)}/√${2*n}=±${fnSmart(mm,4)} ${uShort}</div></div>
+    <div class="step">Результат<div class="step-f">m=±${fnSmart(m,3)}±${fnSmart(mm,3)} (${uShort})</div></div>
+    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×${fnSmart(m,3)}=±${fnSmart(dp,3)} ${uShort}</div></div>
     <div class="step">Проверка свойств<div class="step-f">Симметрия ${c1?'✓':'✗'} | Ограниченность ${c2?'✓':'✗'} | Уничтожение ${c3?'✓':'✗'}</div></div>`;
 
   document.getElementById('ar-result').classList.remove('hidden');
