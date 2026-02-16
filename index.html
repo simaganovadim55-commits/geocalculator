@@ -120,6 +120,13 @@ header{flex-shrink:0;height:60px;background:var(--bg2);border-bottom:1px solid v
 .ar-annot-f{font-family:var(--mono);font-size:11px;color:var(--accent2);margin-top:4px}
 .ar-annot-why{color:var(--text-dim);margin-top:4px;font-size:11.5px}
 .result-formula .hi{color:var(--accent)}.result-formula .hi2{color:var(--accent2)}.result-formula .hi3{color:var(--accent3)}
+/* Конспект — блок формул в стиле записи преподавателя */
+.ar-conspect{font-size:13px;line-height:1.7;color:var(--text)}
+.ar-conspect .conc-title{font-weight:700;color:var(--accent);margin-bottom:6px;font-size:13px}
+.ar-conspect .conc-formula{font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin:6px 0 12px;color:var(--accent2);white-space:nowrap;overflow-x:auto}
+.ar-conspect .conc-example{margin:4px 0 0 12px;font-family:var(--mono);font-size:12px;color:var(--text-dim)}
+.ar-conspect .conc-note{margin-top:14px;padding:10px 12px;background:rgba(107,127,215,.08);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:12px;color:var(--text-dim);line-height:1.5}
+.ar-conspect .conc-block{margin-bottom:18px}
 
 /* TABS */
 .tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -246,7 +253,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         <button class="tab-btn" id="ar-tab-m" onclick="switchArMode('m',this)">Метры (м)</button>
       </div>
       <div class="tab-pane active" id="ar-pane-dms">
-        <div class="info"><strong>Углы:</strong> <strong>запятая</strong> — разделитель измерений (сколько фрагментов между запятыми — столько измерений). Внутри фрагмента можно писать градусы с пробелами: <strong>1 30 45</strong> = 1°30′45″. Одно число = секунды; три числа через пробел = °′″. Дробная часть — точка. Не менее 2 измерений.</div>
+        <div class="info"><strong>Углы:</strong> <strong>запятая</strong> — разделитель измерений (сколько фрагментов между запятыми — столько измерений). Минус: обычный или типографский (−) — программа нормализует. Внутри фрагмента можно писать градусы с пробелами: <strong>1 30 45</strong> = 1°30′45″. Одно число = секунды; три числа через пробел = °′″. Дробная часть — точка. Не менее 2 измерений.</div>
         <div class="field">
           <label>Невязки (сек или ° ′ ″)</label>
           <textarea id="ar-input-dms" placeholder="1.02, -1.88, 0.41, 1 30 0, 0 0 1.5"></textarea>
@@ -266,15 +273,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
     </div>
     <div class="result hidden" id="ar-result">
       <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('ar',0,this)">Итог</button>
-        <button class="tab-btn" onclick="switchTab('ar',1,this)">Свойства</button>
-        <button class="tab-btn" onclick="switchTab('ar',2,this)">График</button>
-        <button class="tab-btn" onclick="switchTab('ar',3,this)">Шаги</button>
+        <button class="tab-btn active" onclick="switchTab('ar',0,this)">Формула Бесселя</button>
+        <button class="tab-btn" onclick="switchTab('ar',1,this)">СКП Серии</button>
+        <button class="tab-btn" onclick="switchTab('ar',2,this)">Свойства</button>
+        <button class="tab-btn" onclick="switchTab('ar',3,this)">График</button>
       </div>
-      <div class="tab-pane active" id="ar-t0"><div class="result-grid" id="ar-main"></div><div id="ar-annot-wrap" class="ar-annot-wrap"></div></div>
-      <div class="tab-pane" id="ar-t1"><div class="check-list" id="ar-checks"></div></div>
-      <div class="tab-pane" id="ar-t2"><div id="ar-hist"></div></div>
-      <div class="tab-pane" id="ar-t3"><div class="steps" id="ar-steps"></div></div>
+      <div class="tab-pane active" id="ar-t0">
+        <div class="result-grid" id="ar-main"></div>
+        <div id="ar-annot-wrap" class="ar-annot-wrap"></div>
+        <div class="result-sep"></div>
+        <div class="steps" id="ar-steps"></div>
+      </div>
+      <div class="tab-pane" id="ar-t1">
+        <div class="result-grid" id="ar-conspect-main"></div>
+        <div id="ar-conspect-annot" class="ar-annot-wrap"></div>
+        <div class="result-sep"></div>
+        <div id="ar-conspect" class="ar-conspect"></div>
+      </div>
+      <div class="tab-pane" id="ar-t2"><div class="check-list" id="ar-checks"></div></div>
+      <div class="tab-pane" id="ar-t3"><div id="ar-hist"></div></div>
     </div>
   </div>
 
@@ -550,13 +567,16 @@ function switchTab(g,idx,btn){
 }
 
 // ── HELPERS ───────────────────────────────────────────────
-// Парсинг: разделители между значениями — пробел или запятая; дробная часть — точка (1.09, 2.3)
-const pn = t=>t.replace(/[,;\n\r\t]+/g,' ').trim().split(/\s+/).map(s=>{
-  const x = s.trim();
-  if(x==='') return NaN;
-  const num = parseFloat(x);
-  return isNaN(num) ? NaN : num;
-}).filter(v=>!isNaN(v));
+// Парсинг: разделители между значениями — пробел или запятая; дробная часть — точка. Unicode минус (−) → ASCII.
+const pn = t=>{
+  const norm = String(t).replace(/\u2212/g, '-');
+  return norm.replace(/[,;\n\r\t]+/g,' ').trim().split(/\s+/).map(s=>{
+    const x = s.trim();
+    if(x==='') return NaN;
+    const num = parseFloat(x);
+    return isNaN(num) ? NaN : num;
+  }).filter(v=>!isNaN(v));
+};
 const fn = (v,d=4)=>typeof v==='number'?v.toFixed(d):String(v);
 const fs = (v,d=4)=>typeof v==='number'?(v>=0?'+':'')+v.toFixed(d):String(v);
 // Умное форматирование: целые без дробной части, дробные — без лишних нулей
@@ -612,10 +632,20 @@ function formatDMS(totalSec){
   if(d >= 360) d = d % 360;
   return d + '°' + String(m).padStart(2,'0') + '′' + String(s).padStart(2,'0') + '″';
 }
+// СКП и производные — ТОЛЬКО секунды (никогда в градусах/DMS). Для метров — в м.
+function formatSKP(value, isM){
+  if(typeof value !== 'number' || !isFinite(value)) return '—';
+  if(isM) return '±' + fnSmart(value, 5) + ' м';
+  return '±' + fnSmart(value, 4) + '″';
+}
 // Парсинг угловых невязок: запятая (или перевод строки) — разделитель измерений. Одно измерение = один фрагмент между запятыми. Внутри фрагмента пробелы допустимы (градусы °′″: 1 30 45). Точка — дробная часть.
 function pnDms(t){
   const out = [];
-  const tokens = t.replace(/\r\n?|\n/g, ',').split(',').map(s=>s.trim()).filter(Boolean);
+  // Нормализация: не-ASCII запятая (，) и минус (−) → обычные, чтобы запятая всегда давала отдельное измерение
+  const norm = String(t)
+    .replace(/\u2212/g, '-')           // Unicode minus → ASCII minus (иначе parseFloat даёт NaN)
+    .replace(/[\uFF0C\u060C\u3001]/g, ','); // полная ширина и др. запятые → ASCII запятая
+  const tokens = norm.replace(/\r\n?|\n/g, ',').split(',').map(s=>s.trim()).filter(Boolean);
   for(const token of tokens){
     const parts = token.split(/\s+/).map(s=>parseFloat(s)).filter(v=>!isNaN(v));
     if(parts.length === 0) continue;
@@ -641,32 +671,44 @@ function calcAR(){
   const raw = isM ? document.getElementById('ar-input-m').value : document.getElementById('ar-input-dms').value;
   const v = (isM ? pn(raw) : pnDms(raw)).filter(x=>isFinite(x));
   if(v.length<2){alert('Введите хотя бы 2 значения');return;}
-  const n=v.length, sum=v.reduce((a,b)=>a+b,0), mean=sum/n;
-  const sq2=v.reduce((a,x)=>a+x*x,0), m=Math.sqrt(sq2/n), mm=m/Math.sqrt(2*n), dp=3*m;
-  const posN=v.filter(x=>x>0).length, negN=v.filter(x=>x<0).length;
-  const maxA=Math.max(...v.map(Math.abs));
-  const out=v.filter(x=>Math.abs(x)>dp).length;
+  const n = v.length;
+  // 1. Среднее
+  const sum = v.reduce((a,b)=>a+b,0), avg = sum / n;
+  // 2. Отклонения от среднего v_i = value - avg
+  const deviations = v.map(x => x - avg);
+  // 3. СКП по отклонениям: m = √(Σ(v_i²) / (n − 1))
+  const sumSqDeviations = deviations.reduce((a, vi) => a + vi * vi, 0);
+  const m = Math.sqrt(sumSqDeviations / (n - 1));
+  const mm = m / Math.sqrt(2 * n), dp = 3 * m;
+  // Путь «конспект»: m = √(ΣΔ²/n) по сырым невязкам (те же введённые значения)
+  const sumSqRaw = v.reduce((a,x)=>a+x*x,0);
+  const mConspect = Math.sqrt(sumSqRaw / n);
+  const mmConspect = mConspect / Math.sqrt(2 * n);
+  const dpConspect = 3 * mConspect;
+  const posN = v.filter(x=>x>0).length, negN = v.filter(x=>x<0).length;
+  const maxA = Math.max(...v.map(Math.abs));
+  const out = v.filter(x=>Math.abs(x - avg) > dp).length;
   const u = isM ? ' м' : '″';
   const uShort = isM ? 'м' : 'сек';
-  const arFmt = (v,sgn)=>{
-    if(isM) return (sgn&&v>=0?'+':'')+fnSmart(v,5)+' м';
-    if(Math.abs(v)<60) return (sgn&&v>=0?'+':'')+fnSmart(v,3)+'″';
-    return (sgn&&v>=0?'+':'')+formatDMS(v);
+  const arFmt = (val,sgn)=>{
+    if(isM) return (sgn&&val>=0?'+':'')+fnSmart(val,5)+' м';
+    if(Math.abs(val)<60) return (sgn&&val>=0?'+':'')+fnSmart(val,3)+'″';
+    return (sgn&&val>=0?'+':'')+formatDMS(val);
   };
 
   document.getElementById('ar-main').innerHTML=
-    ri('n измерений',n)+ri('СКП m ('+uShort+')','±'+arFmt(m,0))+ri('Точность m_m','±'+arFmt(mm,0),'p')+ri('m ± m_m',arFmt(m,0)+' ± '+arFmt(mm,0),'g')+
-    ri('Δ_пред = 3m','±'+arFmt(dp,0),'o')+ri('Σf ('+uShort+')',arFmt(sum,1))+ri('Среднее',arFmt(mean,1),'p')+ri('Макс |f|',arFmt(maxA,0));
+    ri('n измерений',n)+ri('СКП m ('+uShort+')',formatSKP(m,isM))+ri('Точность m_m',formatSKP(mm,isM),'p')+ri('m ± m_m',formatSKP(m,isM).replace('±','')+' ± '+formatSKP(mm,isM).replace('±',''),'g')+
+    ri('Δ_пред = 3m',formatSKP(dp,isM),'o')+ri('Σf ('+uShort+')',arFmt(sum,1))+ri('Среднее',arFmt(avg,1),'p')+ri('Макс |f|',arFmt(maxA,0));
 
   const annotItems = [
     { name: 'n измерений', val: n, formula: 'n — число введённых невязок', why: 'Подсчитано количество значений в вашем вводе.' },
-    { name: 'СКП m', val: '±'+arFmt(m,0), formula: 'm = √([Δ²]/n)', why: 'Сначала берутся погрешности измерений Δ_i (ваши невязки). Для каждой находится квадрат погрешности Δ_i². Квадраты складываются: [Δ²]=ΣΔ_i². Затем подставляется в формулу СКП: m=√([Δ²]/n). Углы выводятся в °′″ (минуты и секунды 0–59).' },
-    { name: 'Точность m_m', val: '±'+arFmt(mm,0), formula: 'm_m = m/√(2n)', why: 'Оценка средней квадратической погрешности самой СКП; тем точнее, чем больше n.' },
-    { name: 'm ± m_m', val: arFmt(m,0)+' ± '+arFmt(mm,0), formula: 'Итоговая запись СКП с её точностью', why: 'Результат представляют как m ± m_m. Углы в °′″ (0–59).' },
-    { name: 'Δ_пред = 3m', val: '±'+arFmt(dp,0), formula: 'Δ_пред = t·m при t=3', why: 'Предельная погрешность (утроенная СКП); при нормальном распределении ≈99.7% ошибок внутри ±3m.' },
+    { name: 'СКП m', val: formatSKP(m,isM), formula: 'm = √(Σ(v_i²)/(n−1)), v_i = f_i − f̄', why: 'По геодезической методике: сначала среднее f̄=[f]/n, затем отклонения v_i=f_i−f̄, затем СКП по отклонениям m=√([v²]/(n−1)). СКП выводится только в секундах (или м), никогда в градусах.' },
+    { name: 'Точность m_m', val: formatSKP(mm,isM), formula: 'm_m = m/√(2n)', why: 'Оценка средней квадратической погрешности самой СКП; тем точнее, чем больше n. Только секунды (или м).' },
+    { name: 'm ± m_m', val: formatSKP(m,isM).replace('±','')+' ± '+formatSKP(mm,isM).replace('±',''), formula: 'Итоговая запись СКП с её точностью', why: 'Результат представляют как m ± m_m. СКП — только в секундах (или м).' },
+    { name: 'Δ_пред = 3m', val: formatSKP(dp,isM), formula: 'Δ_пред = t·m при t=3', why: 'Предельная погрешность (утроенная СКП); при нормальном распределении ≈99.7% ошибок внутри ±3m. Только секунды (или м).' },
     { name: 'Σf', val: arFmt(sum,1), formula: '[f] = Σf_i', why: 'Сумма всех невязок; для случайных погрешностей должна быть близка к нулю.' },
-    { name: 'Среднее', val: arFmt(mean,1), formula: 'x̄ = [f]/n', why: 'Среднее арифметическое невязок; при симметрии распределения близко к нулю.' },
-    { name: 'Макс |f|', val: arFmt(maxA,0), formula: 'max|f_i|', why: 'Наибольшая по модулю невязка; не должна превышать Δ_пред. Всегда в °′″ (0–59).' }
+    { name: 'Среднее', val: arFmt(avg,1), formula: 'f̄ = [f]/n', why: 'Среднее арифметическое невязок; от него считаются отклонения v_i. При симметрии близко к нулю.' },
+    { name: 'Макс |f|', val: arFmt(maxA,0), formula: 'max|f_i|', why: 'Наибольшая по модулю невязка; не должна превышать Δ_пред.' }
   ];
   document.getElementById('ar-annot-wrap').innerHTML = `
     <details>
@@ -676,15 +718,15 @@ function calcAR(){
       </div>
     </details>`;
 
-  const c1=Math.abs(mean)<=2*m/Math.sqrt(n), c2=out===0, c3=Math.abs(posN-negN)<=1.5*Math.sqrt(n);
+  const c1=Math.abs(avg)<=2*m/Math.sqrt(n), c2=out===0, c3=Math.abs(posN-negN)<=1.5*Math.sqrt(n);
   document.getElementById('ar-checks').innerHTML=`
     <div class="check-item ${c1?'check-pass':'check-fail'}">
       <span class="check-icon">${c1?'✅':'❌'}</span>
-      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${arFmt(mean,1)} — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Симметрия (М[Δ]≈0)</strong>Среднее = ${arFmt(avg,1)} — ${c1?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c2?'check-pass':'check-fail'}">
       <span class="check-icon">${c2?'✅':'❌'}</span>
-      <div><strong>Ограниченность</strong>Δ_пред=±${arFmt(dp,0)}; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
+      <div><strong>Ограниченность</strong>Δ_пред=${formatSKP(dp,isM)}; выбросов: ${out} — ${c2?'ВЫПОЛНЯЕТСЯ':'НЕ ВЫПОЛНЯЕТСЯ'}</div>
     </div>
     <div class="check-item ${c3?'check-pass':'check-fail'}">
       <span class="check-icon">${c3?'✅':'❌'}</span>
@@ -704,17 +746,66 @@ function calcAR(){
     <div class="hist-bars">${bins.map(b=>`<div class="hb" style="height:${Math.max(4,Math.round(b/maxB*80))}px"></div>`).join('')}</div>
     <div class="hist-labels">${bins.map((_,i)=>`<div class="hl">${isM ? fnSmart(lo+i*bw,1) : arFmt(lo+i*bw,0)}</div>`).join('')}</div>
     <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--text-dim)">
-      <span style="color:var(--accent)">±m</span>=±${arFmt(m,0)} &nbsp;<span style="color:var(--accent2)">3m</span>=±${arFmt(dp,0)}</div>`;
+      <span style="color:var(--accent)">±m</span>=${formatSKP(m,isM)} &nbsp;<span style="color:var(--accent2)">3m</span>=${formatSKP(dp,isM)}</div>`;
 
   const sqUnit = isM ? 'м²' : 'кв.сек';
+  const sumV = deviations.reduce((a,b)=>a+b,0);
+  const fList = v.length <= 12 ? v.map(x=>fnSmart(x,2)).join(', ') : v.slice(0,5).map(x=>fnSmart(x,2)).join(', ') + ', … ('+n+' всего)';
   document.getElementById('ar-steps').innerHTML=`
-    <div class="step">Данные: n=<strong>${n}</strong> невязок<div class="step-f">диапазон: ${isM ? fnSmart(lo,2)+'…'+fnSmart(hi,2) : arFmt(lo,0)+'…'+arFmt(hi,0)} ${uShort}</div></div>
-    <div class="step">Сумма квадратов [Δ²]=Σf²<div class="step-f">[Δ²]=${fnSmart(sq2,4)} ${sqUnit}</div></div>
-    <div class="step">СКП по Гауссу<div class="step-f">m=√(${fnSmart(sq2,4)}/${n})=±${arFmt(m,0)}</div></div>
-    <div class="step">Оценка точности СКП<div class="step-f">m_m=m/√(2n)=±${arFmt(mm,0)}</div></div>
-    <div class="step">Результат<div class="step-f">m=±${arFmt(m,0)}±${arFmt(mm,0)}</div></div>
-    <div class="step">Предельная погрешность t=3<div class="step-f">Δ_пред=3×m=±${arFmt(dp,0)}</div></div>
+    <div class="step"><strong>1. Разбор ввода</strong> — где может «съехать»: каждое число между запятыми = одно измерение; минус «−» должен быть обычный (ASCII).<div class="step-f">Распознано n = <strong>${n}</strong> невязок: ${fList} ${uShort}</div></div>
+    <div class="step"><strong>2. Сумма и среднее</strong><div class="step-f">[f] = Σf_i = ${fnSmart(sum,4)} &nbsp;→&nbsp; f̄ = [f]/n = ${fnSmart(sum,4)}/${n} = ${arFmt(avg,1)}</div></div>
+    <div class="step"><strong>3. Отклонения</strong> v_i = f_i − f̄ (от каждого значения отнимаем среднее).<div class="step-f">[v²] = Σ(v_i²) = ${fnSmart(sumSqDeviations,4)} ${sqUnit}</div></div>
+    <div class="step"><strong>4. Контроль</strong> Σv_i должно быть 0 (следствие определения v_i).<div class="step-f">Σv_i = ${fnSmart(sumV,10)} ${sumV===0?'✓':' (проверьте ввод)'}</div></div>
+    <div class="step"><strong>5. СКП по Бесселю</strong> m = √([v²]/(n−1)) — только по отклонениям, знаменатель (n−1).<div class="step-f">m = √(${fnSmart(sumSqDeviations,4)}/${n-1}) = √(${fnSmart(sumSqDeviations/(n-1),6)}) = ${formatSKP(m,isM)}</div></div>
+    <div class="step"><strong>6. Точность СКП и предел</strong><div class="step-f">m_m = m/√(2n) = ${formatSKP(mm,isM)} &nbsp;|&nbsp; Δ_пред = 3m = ${formatSKP(dp,isM)}</div></div>
     <div class="step">Проверка свойств<div class="step-f">Симметрия ${c1?'✓':'✗'} | Ограниченность ${c2?'✓':'✗'} | Уничтожение ${c3?'✓':'✗'}</div></div>`;
+
+  // Вкладка «СКП Серии» — результат по формулам конспекта (m = √(ΣΔ²/n))
+  document.getElementById('ar-conspect-main').innerHTML=
+    ri('n измерений',n)+ri('СКП m ('+uShort+')',formatSKP(mConspect,isM))+ri('Точность m_m',formatSKP(mmConspect,isM),'p')+ri('m ± m_m',formatSKP(mConspect,isM).replace('±','')+' ± '+formatSKP(mmConspect,isM).replace('±',''),'g')+
+    ri('Δ_пред = 3m',formatSKP(dpConspect,isM),'o')+ri('ΣΔ² ('+sqUnit+')',fnSmart(sumSqRaw,4))+ri('Σf ('+uShort+')',arFmt(sum,1))+ri('Макс |f|',arFmt(maxA,0));
+
+  const annotSeries = [
+    { name: 'n измерений', formula: 'n — число невязок (одни и те же данные, что во вкладке «Формула Бесселя»).', why: 'Используются те же введённые значения.' },
+    { name: 'СКП m', formula: 'm = √(ΣΔ² / n), где ΣΔ² = Σ(f_i²) — сумма квадратов невязок без вычитания среднего.', why: 'По конспекту: СКП правки одного измерения. Результат только в секундах (или м).' },
+    { name: 'Точность m_m', formula: 'm_m = m / √(2n)', why: 'СКП самой СКП (оценки).' },
+    { name: 'Δ_пред = 3m', formula: 'Предельная погрешность; допускается невязка до этого значения.', why: 'Утроенная СКП.' },
+    { name: 'ΣΔ²', formula: 'Σ(f_i²) — сумма квадратов введённых невязок.', why: 'Используется в знаменателе под корнем для m.' }
+  ];
+  document.getElementById('ar-conspect-annot').innerHTML=`
+    <details>
+      <summary>Как получены результаты (СКП серии)</summary>
+      <div class="ar-annot-list">
+        ${annotSeries.map(a=>`<div class="ar-annot-item"><strong>${a.name}</strong><div class="ar-annot-f">${a.formula}</div><div class="ar-annot-why">${a.why}</div></div>`).join('')}
+      </div>
+    </details>`;
+
+  // Шаги решения по формулам конспекта
+  const fListConc = v.length <= 10 ? v.map(x=>arFmt(x,1)).join(', ') : v.slice(0,4).map(x=>arFmt(x,1)).join(', ') + ', … ('+n+' всего)';
+  document.getElementById('ar-conspect').innerHTML=`
+    <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">Шаги по формулам конспекта (СКП серии)</div>
+    <div class="conc-block">
+      <div class="conc-title">1. Данные (ваши невязки)</div>
+      <div class="conc-formula">n = ${n} &nbsp;|&nbsp; f_i: ${fListConc}</div>
+    </div>
+    <div class="conc-block">
+      <div class="conc-title">2. СКП правки (одного измерения)</div>
+      <div class="conc-formula">m = √(ΣΔ² / n)</div>
+      <div class="conc-example">ΣΔ² = Σ(f_i²) = ${fnSmart(sumSqRaw,4)} ${sqUnit} &nbsp;→&nbsp; m = √(${fnSmart(sumSqRaw,4)} / ${n}) = √(${fnSmart(sumSqRaw/n,6)}) = ${formatSKP(mConspect,isM)}</div>
+    </div>
+    <div class="conc-block">
+      <div class="conc-title">3. СКП самой СКП (СКП оценки)</div>
+      <div class="conc-formula">m_m = m / √(2n)</div>
+      <div class="conc-example">m_m = ${formatSKP(mConspect,isM).replace('±','')} / √(${2*n}) = ${formatSKP(mmConspect,isM)}</div>
+    </div>
+    <div class="conc-block">
+      <div class="conc-title">4. Предельная погрешность</div>
+      <div class="conc-formula">Δ_пред = 3 · m</div>
+      <div class="conc-example">Δ_пред = 3 × ${formatSKP(mConspect,isM).replace('±','')} = ${formatSKP(dpConspect,isM)} — допускается невязка до этого значения.</div>
+    </div>
+    <div class="conc-note">
+      <strong>Два пути:</strong> здесь — СКП серии (m = √(ΣΔ²/n)). Во вкладке <strong>Формула Бесселя</strong> — m = √([v²]/(n−1)) по отклонениям от среднего. Оба используют одни и те же введённые значения.
+    </div>`;
 
   document.getElementById('ar-result').classList.remove('hidden');
 }
